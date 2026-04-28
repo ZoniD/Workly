@@ -3,46 +3,65 @@ package dk.ek.workly.controller;
 import dk.ek.workly.dto.LoginRequest;
 import dk.ek.workly.dto.LoginResponse;
 import dk.ek.workly.model.User;
-import dk.ek.workly.service.UserService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
+import dk.ek.workly.service.AuthenticationService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins =  "http://127.0.0.1:5500")
 public class AuthController {
 
-    private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationService authService;
 
-    public AuthController(UserService userService, PasswordEncoder passwordEncoder) {
-        this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
+    public AuthController(AuthenticationService authService) {
+        this.authService = authService;
     }
 
-
-    //Here the user kan register themselves into the system
+    /**
+     * Register new user as VISITOR
+     * JWT token sent in Authorization header
+     * Returns: 201 Created on success, 400 Bad Request on failure
+     */
     @PostMapping("/register")
-    public User register(@RequestBody User user) {
-        return userService.registerUser(user);
-
-
+    public ResponseEntity<LoginResponse> register(
+            @RequestBody User user,
+            HttpServletResponse response) {
+        try {
+            LoginResponse loginResponse = authService.register(user);
+            String token = authService.generateToken(user.getEmail());
+            if (token != null) {
+                response.setHeader("Authorization", "Bearer " + token);
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new LoginResponse("Registration failed: " + e.getMessage(), null, null));
+        }
     }
 
-    //Login logic
+    /**
+     * Login user with email and password
+     * JWT token sent in Authorization header
+     * Returns: 200 OK on success, 401 Unauthorized on failure
+     */
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
-        User user = userService.findByEmail(request.getEmail());
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest request,
+            HttpServletResponse response) {
+        LoginResponse loginResponse = authService.login(request);
 
-        if (user == null) {
-            return new LoginResponse("User not found", null);
+        // Check if login was successful (email field indicates success)
+        if (loginResponse.getEmail() != null) {
+            String token = authService.generateToken(loginResponse.getEmail());
+            if (token != null) {
+                response.setHeader("Authorization", "Bearer " + token);
+            }
+            return ResponseEntity.ok(loginResponse);
         }
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
-            return new LoginResponse("Incorrect password", null);
-        }
-        return new LoginResponse("login was Success",user.getRole().name());
+        // Login failed - return 401 Unauthorized
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(loginResponse);
     }
 }
-
