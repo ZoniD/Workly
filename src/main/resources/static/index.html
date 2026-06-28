@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Find lokale fagfolk inden for malerarbejde, tømrerarbejde, el, VVS og meget mere.">
+    <title>Workly | Find den rette fagperson</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" href="#top" aria-label="Workly forside">
+            <span class="brand-mark">W</span>
+            <span>Workly</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Primær navigation">
+            <a href="#categories">Kategorier</a>
+            <a href="#professionals">Fagfolk</a>
+            <a href="#how-it-works">Sådan virker det</a>
+        </nav>
+
+        <div class="header-actions">
+            <div id="user-area" class="user-area" hidden>
+                <span id="user-name" class="user-name"></span>
+                <button id="logout-button" class="button button-ghost" type="button">Log ud</button>
+            </div>
+            <button id="login-button" class="button button-ghost" type="button">Log ind</button>
+            <button id="profile-button" class="button button-primary" type="button">Opret virksomhedsprofil</button>
+        </div>
+    </div>
+</header>
+
+<main id="top">
+    <section class="hero">
+        <div class="container hero-grid">
+            <div class="hero-copy">
+                <span class="eyebrow">Lokale fagfolk. Samlet ét sted.</span>
+                <h1>Find den rette fagperson til dit næste projekt</h1>
+                <p>
+                    Søg blandt godkendte malere, tømrere, elektrikere, VVS’ere og andre fagfolk i dit område.
+                </p>
+
+                <form id="search-form" class="search-panel">
+                    <label class="search-field">
+                        <span>Hvad søger du?</span>
+                        <input id="search-input" type="search" placeholder="Fx maler, tømrer eller gulvlægger">
+                    </label>
+                    <label class="search-field">
+                        <span>Område</span>
+                        <input id="location-input" type="search" placeholder="Fx København">
+                    </label>
+                    <button class="button button-primary search-button" type="submit">Søg fagfolk</button>
+                </form>
+
+                <div class="trust-row" aria-label="Fordele ved Workly">
+                    <span>✓ Godkendte profiler</span>
+                    <span>✓ Direkte kontakt</span>
+                    <span>✓ Gratis at søge</span>
+                </div>
+            </div>
+
+            <aside class="hero-card" aria-label="Populære opgaver">
+                <div class="hero-card-top">
+                    <span class="status-dot"></span>
+                    <span>Fagfolk klar til nye opgaver</span>
+                </div>
+                <div class="project-preview">
+                    <div class="project-icon">🏠</div>
+                    <div>
+                        <strong>Renovering af bolig</strong>
+                        <p>Find flere faggrupper til samme projekt.</p>
+                    </div>
+                </div>
+                <div class="mini-profiles" aria-hidden="true">
+                    <span>ML</span><span>JT</span><span>AK</span><span>+24</span>
+                </div>
+                <div class="hero-metric">
+                    <strong id="professional-count">0</strong>
+                    <span>godkendte fagfolk fundet</span>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section id="categories" class="section categories-section">
+        <div class="container">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">Udforsk fagområder</span>
+                    <h2>Hvad skal du have hjælp til?</h2>
+                </div>
+                <button id="clear-category" class="text-button" type="button" hidden>Vis alle</button>
+            </div>
+
+            <div id="category-grid" class="category-grid" aria-live="polite">
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="professionals" class="section professionals-section">
+        <div class="container">
+            <div class="section-heading professionals-heading">
+                <div>
+                    <span class="eyebrow">Udvalgte profiler</span>
+                    <h2>Fagfolk i nærheden</h2>
+                </div>
+                <div class="result-meta">
+                    <span id="result-count">Indlæser…</span>
+                    <select id="sort-select" aria-label="Sorter fagfolk">
+                        <option value="rating">Bedst bedømt</option>
+                        <option value="name">Navn A–Å</option>
+                        <option value="location">Område A–Å</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="professional-grid" class="professional-grid" aria-live="polite"></div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section steps-section">
+        <div class="container">
+            <div class="section-heading centered-heading">
+                <div>
+                    <span class="eyebrow">En enkel proces</span>
+                    <h2>Fra idé til færdigt arbejde</h2>
+                </div>
+            </div>
+            <div class="steps-grid">
+                <article class="step-card">
+                    <span>01</span>
+                    <h3>Søg efter fagområde</h3>
+                    <p>Vælg den type arbejde og det område, der passer til din opgave.</p>
+                </article>
+                <article class="step-card">
+                    <span>02</span>
+                    <h3>Sammenlign profiler</h3>
+                    <p>Læs beskrivelser, se bedømmelser og find de bedste kandidater.</p>
+                </article>
+                <article class="step-card">
+                    <span>03</span>
+                    <h3>Tag direkte kontakt</h3>
+                    <p>Kontakt virksomheden via telefon eller email og aftal detaljerne.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="container cta-card">
+            <div>
+                <span class="eyebrow light-eyebrow">For virksomheder</span>
+                <h2>Få flere lokale kunder gennem Workly</h2>
+                <p>Opret en profil, vælg dit fagområde og bliv synlig for kunder i dit område.</p>
+            </div>
+            <button id="cta-profile-button" class="button button-light" type="button">Opret virksomhedsprofil</button>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="container footer-inner">
+        <a class="brand footer-brand" href="#top">
+            <span class="brand-mark">W</span>
+            <span>Workly</span>
+        </a>
+        <p>Find lokale fagfolk på en enkel og tryg måde.</p>
+        <span>© 2026 Workly</span>
+    </div>
+</footer>
+
+<div id="auth-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="auth-modal"></div>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <button class="modal-close" type="button" data-close-modal="auth-modal" aria-label="Luk">×</button>
+        <div class="modal-header">
+            <span class="eyebrow">Velkommen til Workly</span>
+            <h2 id="auth-title">Log ind eller opret bruger</h2>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+            <button id="login-tab" class="auth-tab active" type="button" role="tab">Log ind</button>
+            <button id="register-tab" class="auth-tab" type="button" role="tab">Opret bruger</button>
+        </div>
+
+        <form id="login-form" class="form-stack">
+            <label>Email<input name="email" type="email" required autocomplete="email"></label>
+            <label>Adgangskode<input name="password" type="password" required autocomplete="current-password"></label>
+            <button class="button button-primary button-full" type="submit">Log ind</button>
+        </form>
+
+        <form id="register-form" class="form-stack" hidden>
+            <label>Navn<input name="name" type="text" required autocomplete="name"></label>
+            <label>Email<input name="email" type="email" required autocomplete="email"></label>
+            <label>Adgangskode<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+            <small>Adgangskoden skal være mindst 8 tegn.</small>
+            <button class="button button-primary button-full" type="submit">Opret bruger</button>
+        </form>
+    </section>
+</div>
+
+<div id="profile-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="profile-modal"></div>
+    <section class="modal-card modal-card-large" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+        <button class="modal-close" type="button" data-close-modal="profile-modal" aria-label="Luk">×</button>
+        <div class="modal-header">
+            <span class="eyebrow">Bliv synlig på Workly</span>
+            <h2 id="profile-title">Opret virksomhedsprofil</h2>
+            <p>Profilen bliver synlig, når en administrator har godkendt den.</p>
+        </div>
+
+        <form id="profile-form" class="form-grid">
+            <label>Virksomhedsnavn<input name="companyName" type="text" required></label>
+            <label>Fagområde<select id="profile-category" name="categoryId" required></select></label>
+            <label>Telefon<input name="phone" type="tel"></label>
+            <label>Email<input name="email" type="email"></label>
+            <label class="full-width">Område<input name="location" type="text" placeholder="Fx København" required></label>
+            <label class="full-width">Beskrivelse<textarea name="description" rows="5" placeholder="Fortæl kort om virksomheden og jeres erfaring"></textarea></label>
+            <button class="button button-primary full-width" type="submit">Send profil til godkendelse</button>
+        </form>
+    </section>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package dk.ek.workly.controller;
 
+import dk.ek.workly.dto.UserResponse;
 import dk.ek.workly.model.User;
 import dk.ek.workly.service.UserService;
 
@@ -18,8 +19,7 @@ public class UserController {
     }
 
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         return userService.getAllUsers();
     }
 }
-

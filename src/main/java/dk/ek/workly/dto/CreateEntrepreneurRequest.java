@@ -9,7 +9,11 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginRequest {
+public class CreateEntrepreneurRequest {
+    private String companyName;
+    private String description;
+    private String phone;
     private String email;
-    private String password;
+    private String location;
+    private Long categoryId;
 }

@@ -8,75 +8,49 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final String jwtSecret;
+    private final long jwtExpiration;
 
-    @Value("${jwt.expiration}")
-    private long jwtExpiration;
+    public JwtTokenProvider(
+            @Value("${jwt.secret}") String jwtSecret,
+            @Value("${jwt.expiration}") long jwtExpiration) {
+        this.jwtSecret = jwtSecret;
+        this.jwtExpiration = jwtExpiration;
+    }
 
-    /**
-     * Generate JWT token with user email and role
-     */
     public String generateToken(String email, String role) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Date expiresAt = new Date(now.getTime() + jwtExpiration);
 
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
                 .issuedAt(now)
-                .expiration(expiryDate)
+                .expiration(expiresAt)
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    /**
-     * Validate JWT token
-     */
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token);
+            getAllClaims(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }
     }
 
-    /**
-     * Get email from token
-     */
-    public String getEmailFromToken(String token) {
-        Claims claims = getAllClaimsFromToken(token);
-        return claims.getSubject();
-    }
-
-    /**
-     * Get email from token (alias for compatibility)
-     */
     public String getEmail(String token) {
-        return getEmailFromToken(token);
+        return getAllClaims(token).getSubject();
     }
 
-    /**
-     * Get role from token
-     */
-    public String getRoleFromToken(String token) {
-        Claims claims = getAllClaimsFromToken(token);
-        return claims.get("role", String.class);
-    }
-
-    /**
-     * Get all claims from token
-     */
-    private Claims getAllClaimsFromToken(String token) {
+    private Claims getAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -84,10 +58,7 @@ public class JwtTokenProvider {
                 .getPayload();
     }
 
-    /**
-     * Get signing key for JWT using secure key generation
-     */
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 }
