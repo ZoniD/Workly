@@ -1009,3 +1009,79 @@ img {
         padding: 24px 20px;
     }
 }
+
+/* Tilføj nederst i din eksisterende style.css */
+.news-section {
+    background: #f6f9f7;
+}
+
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.home-news-card {
+    overflow: hidden;
+    border: 1px solid #dfe8e2;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 16px 42px rgba(25, 61, 41, 0.07);
+}
+
+.home-news-card.featured {
+    border-color: #8fc4a6;
+}
+
+.home-news-card img,
+.news-placeholder {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+}
+
+.news-placeholder {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #dff3e8, #eef8f2);
+    color: #1f7a4d;
+    font-size: 3rem;
+    font-weight: 900;
+}
+
+.home-news-content {
+    padding: 20px;
+}
+
+.home-news-content h3 {
+    margin: 9px 0 8px;
+}
+
+.home-news-content p {
+    margin: 0;
+    color: #66766d;
+    line-height: 1.65;
+}
+
+.home-news-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #738078;
+    font-size: 0.78rem;
+}
+
+.home-news-meta span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #e7f5ed;
+    color: #17613d;
+    font-weight: 800;
+}
+
+@media (max-width: 900px) {
+    .news-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

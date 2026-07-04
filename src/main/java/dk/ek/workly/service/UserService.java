@@ -1,6 +1,6 @@
 package dk.ek.workly.service;
 
-import dk.ek.workly.dto.UserResponse;
+import dk.ek.workly.dto.userDTO.UserResponse;
 import dk.ek.workly.repository.UserRepository;
 import org.springframework.stereotype.Service;
 

@@ -1,19 +1,18 @@
-package dk.ek.workly.dto;
+package dk.ek.workly.dto.adminDTO;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreateEntrepreneurRequest {
+public class AdminCreateEntrepreneurRequest {
+    private String userName;
+    private String userEmail;
+    private String temporaryPassword;
     private String companyName;
     private String description;
     private String phone;
-    private String email;
+    private String businessEmail;
     private String location;
     private Long categoryId;
 }

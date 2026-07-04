@@ -1,4 +1,4 @@
-package dk.ek.workly.dto;
+package dk.ek.workly.dto.adminDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

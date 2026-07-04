@@ -1,6 +1,6 @@
 package dk.ek.workly.controller;
 
-import dk.ek.workly.dto.CategoryResponse;
+import dk.ek.workly.dto.adminDTO.CategoryResponse;
 import dk.ek.workly.service.CategoryService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

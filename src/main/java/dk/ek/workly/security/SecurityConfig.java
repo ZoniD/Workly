@@ -19,7 +19,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-public class SecurityConfig {
+public class  SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -44,23 +44,70 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+
+                        /*
+                         * Statiske sider og filer.
+                         */
                         .requestMatchers(
                                 "/",
                                 "/index.html",
+                                "/admin.html",
+                                "/entrepreneur.html",
                                 "/css/**",
                                 "/js/**",
-                                "/favicon.ico"
+                                "/images/**",
+                                "/favicon.ico",
+                                "/error"
                         ).permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/entrepreneurs/**").permitAll()
+
+                        /*
+                         * Login og registrering.
+                         */
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
+
+                        /*
+                         * Offentlige data.
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/categories/**"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/entrepreneurs/**"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/news/**"
+                        ).permitAll()
+
+                        /*
+                         * Kun administrator.
+                         * Email: admin@gmail.com
+                         * Adgangskode: 12345678
+                         */
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        /*
+                         * Kun godkendte fagpersonbrugere.
+                         *
+                         * Rollen kontrolleres her.
+                         * Status APPROVED kontrolleres i servicen.
+                         */
+                        .requestMatchers("/api/entrepreneur/**")
+                        .hasRole("ENTREPRENEUR")
+
+                        /*
+                         * En almindelig bruger må sende en ansøgning.
+                         */
                         .requestMatchers(HttpMethod.POST, "/api/entrepreneurs").authenticated()
-                        .requestMatchers(HttpMethod.PATCH, "/api/entrepreneurs/*/approval").hasRole("ADMIN")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

@@ -1,7 +1,6 @@
 package dk.ek.workly.controller;
 
-import dk.ek.workly.dto.UserResponse;
-import dk.ek.workly.model.User;
+import dk.ek.workly.dto.userDTO.UserResponse;
 import dk.ek.workly.service.UserService;
 
 import org.springframework.web.bind.annotation.*;

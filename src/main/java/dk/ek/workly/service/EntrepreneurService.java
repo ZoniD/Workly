@@ -1,15 +1,19 @@
 package dk.ek.workly.service;
 
-import dk.ek.workly.dto.CreateEntrepreneurRequest;
-import dk.ek.workly.dto.EntrepreneurResponse;
+import dk.ek.workly.dto.adminDTO.AdminCreateEntrepreneurRequest;
+import dk.ek.workly.dto.adminDTO.AdminEntrepreneurResponse;
+import dk.ek.workly.dto.entrepreneurDTO.EntrepreneurResponse;
+import dk.ek.workly.dto.entrepreneurDTO.CreateEntrepreneurRequest;
 import dk.ek.workly.model.Category;
 import dk.ek.workly.model.Entrepreneur;
+import dk.ek.workly.model.EntrepreneurStatus;
 import dk.ek.workly.model.Role;
 import dk.ek.workly.model.User;
 import dk.ek.workly.repository.CategoryRepository;
 import dk.ek.workly.repository.EntrepreneurRepository;
 import dk.ek.workly.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,24 +24,30 @@ public class EntrepreneurService {
     private final EntrepreneurRepository entrepreneurRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public EntrepreneurService(
             EntrepreneurRepository entrepreneurRepository,
             CategoryRepository categoryRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
         this.entrepreneurRepository = entrepreneurRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     public List<EntrepreneurResponse> getApprovedEntrepreneurs(Long categoryId) {
         List<Entrepreneur> entrepreneurs = categoryId == null
-                ? entrepreneurRepository.findByApprovedTrueOrderByRatingDesc()
-                : entrepreneurRepository.findByApprovedTrueAndCategoryIdOrderByRatingDesc(categoryId);
+                ? entrepreneurRepository.findByStatusAndActiveTrueOrderByRatingDesc(
+                EntrepreneurStatus.APPROVED)
+                : entrepreneurRepository.findByStatusAndActiveTrueAndCategory_IdOrderByRatingDesc(
+                EntrepreneurStatus.APPROVED,
+                categoryId);
 
         return entrepreneurs.stream()
-                .map(this::toResponse)
+                .map(this::toPublicResponse)
                 .toList();
     }
 
@@ -46,18 +56,18 @@ public class EntrepreneurService {
             CreateEntrepreneurRequest request,
             String authenticatedEmail) {
 
-        validateRequest(request);
+        validatePublicRequest(request);
 
         User user = userRepository.findByEmailIgnoreCase(authenticatedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Brugeren blev ikke fundet"));
 
-        if (entrepreneurRepository.findByUserId(user.getId()).isPresent()) {
-            throw new IllegalArgumentException("Brugeren har allerede en virksomhedsprofil");
+        if (entrepreneurRepository.existsByUser_Id(user.getId())) {
+            throw new IllegalArgumentException(
+                    "Brugeren har allerede en fagpersonprofil"
+            );
         }
 
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .filter(Category::isActive)
-                .orElseThrow(() -> new IllegalArgumentException("Kategorien findes ikke"));
+        Category category = findActiveCategory(request.getCategoryId());
 
         Entrepreneur entrepreneur = new Entrepreneur();
         entrepreneur.setUser(user);
@@ -67,25 +77,140 @@ public class EntrepreneurService {
         entrepreneur.setEmail(trimOrEmpty(request.getEmail()));
         entrepreneur.setLocation(request.getLocation().trim());
         entrepreneur.setCategory(category);
-        entrepreneur.setApproved(false);
+        entrepreneur.setStatus(EntrepreneurStatus.PENDING);
+        entrepreneur.setActive(true);
         entrepreneur.setRating(0.0);
 
-        user.setRole(Role.ENTREPRENEUR);
-        userRepository.save(user);
+        entrepreneur.setStatus(
+                EntrepreneurStatus.PENDING
+        );
 
-        return toResponse(entrepreneurRepository.save(entrepreneur));
+        return toPublicResponse(entrepreneurRepository.save(entrepreneur));
     }
 
     @Transactional
-    public EntrepreneurResponse setApproval(Long id, boolean approved) {
-        Entrepreneur entrepreneur = entrepreneurRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Virksomhedsprofilen findes ikke"));
+    public List<AdminEntrepreneurResponse> getAllForAdmin(
+            EntrepreneurStatus status) {
 
-        entrepreneur.setApproved(approved);
-        return toResponse(entrepreneurRepository.save(entrepreneur));
+        List<Entrepreneur> entrepreneurs = status == null
+                ? entrepreneurRepository.findAllByOrderByCreatedAtDesc()
+                : entrepreneurRepository.findByStatusOrderByCreatedAtDesc(status);
+
+        return entrepreneurs.stream()
+                .map(this::toAdminResponse)
+                .toList();
     }
 
-    private EntrepreneurResponse toResponse(Entrepreneur entrepreneur) {
+    @Transactional
+    public AdminEntrepreneurResponse createByAdmin(
+            AdminCreateEntrepreneurRequest request) {
+
+        validateAdminRequest(request);
+
+        String loginEmail = request.getUserEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmailIgnoreCase(loginEmail)) {
+            throw new IllegalArgumentException("Der findes allerede en bruger med denne email");
+        }
+
+        Category category = findActiveCategory(request.getCategoryId());
+
+        User user = new User();
+        user.setName(request.getUserName().trim());
+        user.setEmail(loginEmail);
+        user.setPassword(passwordEncoder.encode(request.getTemporaryPassword()));
+        user.setRole(Role.ENTREPRENEUR);
+        user.setEnabled(true);
+        User savedUser = userRepository.save(user);
+
+        Entrepreneur entrepreneur = new Entrepreneur();
+        entrepreneur.setUser(savedUser);
+        entrepreneur.setCompanyName(request.getCompanyName().trim());
+        entrepreneur.setDescription(trimOrEmpty(request.getDescription()));
+        entrepreneur.setPhone(trimOrEmpty(request.getPhone()));
+        entrepreneur.setEmail(trimOrEmpty(request.getBusinessEmail()));
+        entrepreneur.setLocation(request.getLocation().trim());
+        entrepreneur.setCategory(category);
+        entrepreneur.setStatus(EntrepreneurStatus.APPROVED);
+        entrepreneur.setActive(true);
+        entrepreneur.setRating(0.0);
+
+        return toAdminResponse(entrepreneurRepository.save(entrepreneur));
+    }
+
+    @Transactional
+    public AdminEntrepreneurResponse updateStatus(
+            Long entrepreneurId,
+            EntrepreneurStatus newStatus) {
+
+        Entrepreneur entrepreneur =
+                entrepreneurRepository.findById(entrepreneurId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Fagpersonen blev ikke fundet"
+                                )
+                        );
+
+        entrepreneur.setStatus(newStatus);
+
+        User user = entrepreneur.getUser();
+
+        /*
+         * Når profilen godkendes, får brugeren adgang
+         * til fagpersonportalen.
+         */
+        if (newStatus == EntrepreneurStatus.APPROVED) {
+            if (user.getRole() != Role.ADMIN) {
+                user.setRole(Role.ENTREPRENEUR);
+            }
+        }
+
+        /*
+         * En afvist bruger skal ikke have
+         * fagpersonrollen.
+         */
+        if (newStatus == EntrepreneurStatus.REJECTED) {
+            if (user.getRole() == Role.ENTREPRENEUR) {
+                user.setRole(Role.USER);
+            }
+        }
+
+        userRepository.save(user);
+
+        Entrepreneur savedEntrepreneur =
+                entrepreneurRepository.save(entrepreneur);
+
+        return toAdminResponse(savedEntrepreneur);
+    }
+
+    @Transactional
+    public AdminEntrepreneurResponse deactivate(Long id) {
+        Entrepreneur entrepreneur = findEntrepreneur(id);
+        entrepreneur.setActive(false);
+        return toAdminResponse(entrepreneurRepository.save(entrepreneur));
+    }
+
+    @Transactional
+    public AdminEntrepreneurResponse restore(Long id) {
+        Entrepreneur entrepreneur = findEntrepreneur(id);
+        entrepreneur.setActive(true);
+        return toAdminResponse(entrepreneurRepository.save(entrepreneur));
+    }
+
+    private Entrepreneur findEntrepreneur(Long id) {
+        return entrepreneurRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Fagpersonen blev ikke fundet"));
+    }
+
+    private Category findActiveCategory(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .filter(Category::isActive)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Kategorien findes ikke eller er deaktiveret"));
+    }
+
+    private EntrepreneurResponse toPublicResponse(Entrepreneur entrepreneur) {
         Category category = entrepreneur.getCategory();
 
         return new EntrepreneurResponse(
@@ -95,25 +220,74 @@ public class EntrepreneurService {
                 entrepreneur.getPhone(),
                 entrepreneur.getEmail(),
                 entrepreneur.getLocation(),
-                category.getId(),
-                category.getName(),
-                category.getIcon(),
-                entrepreneur.getRating()
+                entrepreneur.getCategory().getId(),
+                entrepreneur.getCategory().getName(),
+                entrepreneur.getCategory().getIcon(),
+                entrepreneur.getRating(),
+                entrepreneur.isAvailableForWork()
         );
     }
 
-    private void validateRequest(CreateEntrepreneurRequest request) {
+    private AdminEntrepreneurResponse toAdminResponse(Entrepreneur entrepreneur) {
+        User user = entrepreneur.getUser();
+        Category category = entrepreneur.getCategory();
+
+        return new AdminEntrepreneurResponse(
+                entrepreneur.getId(),
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                entrepreneur.getCompanyName(),
+                entrepreneur.getDescription(),
+                entrepreneur.getPhone(),
+                entrepreneur.getEmail(),
+                entrepreneur.getLocation(),
+                category.getId(),
+                category.getName(),
+                entrepreneur.getStatus(),
+                entrepreneur.isActive(),
+                entrepreneur.getRating(),
+                entrepreneur.getCreatedAt(),
+                entrepreneur.getUpdatedAt()
+        );
+    }
+
+    private void validatePublicRequest(CreateEntrepreneurRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Profildata mangler");
         }
-        if (isBlank(request.getCompanyName())) {
-            throw new IllegalArgumentException("Virksomhedsnavn skal udfyldes");
+        requireText(request.getCompanyName(), "Virksomhedsnavn skal udfyldes");
+        requireText(request.getLocation(), "Område skal udfyldes");
+        requireCategory(request.getCategoryId());
+    }
+
+    private void validateAdminRequest(AdminCreateEntrepreneurRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Profildata mangler");
         }
-        if (isBlank(request.getLocation())) {
-            throw new IllegalArgumentException("Område skal udfyldes");
+
+        requireText(request.getUserName(), "Brugerens navn skal udfyldes");
+        requireText(request.getUserEmail(), "Brugerens email skal udfyldes");
+        requireText(request.getCompanyName(), "Virksomhedsnavn skal udfyldes");
+        requireText(request.getLocation(), "Område skal udfyldes");
+        requireCategory(request.getCategoryId());
+
+        if (isBlank(request.getTemporaryPassword())
+                || request.getTemporaryPassword().length() < 8) {
+            throw new IllegalArgumentException(
+                    "Den midlertidige adgangskode skal være mindst 8 tegn");
         }
-        if (request.getCategoryId() == null) {
+    }
+
+    private void requireCategory(Long categoryId) {
+        if (categoryId == null) {
             throw new IllegalArgumentException("Vælg en kategori");
+        }
+    }
+
+    private void requireText(String value, String message) {
+        if (isBlank(value)) {
+            throw new IllegalArgumentException(message);
         }
     }
 

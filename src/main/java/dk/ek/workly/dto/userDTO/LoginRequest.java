@@ -1,4 +1,4 @@
-package dk.ek.workly.dto;
+package dk.ek.workly.dto.userDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequest {
-    private String name;
+public class LoginRequest {
     private String email;
     private String password;
 }
