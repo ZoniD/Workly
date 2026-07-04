@@ -1,4 +1,4 @@
-package dk.ek.workly.dto;
+package dk.ek.workly.dto.userDTO;
 
 import dk.ek.workly.model.Role;
 import lombok.AllArgsConstructor;

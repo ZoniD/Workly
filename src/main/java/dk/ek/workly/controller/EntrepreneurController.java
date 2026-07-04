@@ -1,7 +1,7 @@
 package dk.ek.workly.controller;
 
-import dk.ek.workly.dto.CreateEntrepreneurRequest;
-import dk.ek.workly.dto.EntrepreneurResponse;
+import dk.ek.workly.dto.entrepreneurDTO.CreateEntrepreneurRequest;
+import dk.ek.workly.dto.entrepreneurDTO.EntrepreneurResponse;
 import dk.ek.workly.service.EntrepreneurService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

@@ -1,8 +1,8 @@
 package dk.ek.workly.service;
 
+import dk.ek.workly.dto.ApprovalRequest;
 import dk.ek.workly.dto.AuthResponse;
-import dk.ek.workly.dto.LoginRequest;
-import dk.ek.workly.dto.RegisterRequest;
+import dk.ek.workly.dto.userDTO.LoginRequest;
 import dk.ek.workly.model.Role;
 import dk.ek.workly.model.User;
 import dk.ek.workly.repository.UserRepository;
@@ -16,18 +16,18 @@ public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider tokenProvider;
+    private final JwtTokenProvider jwtokenProvider;
 
     public AuthenticationService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider tokenProvider) {
+            JwtTokenProvider jwtokenProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.tokenProvider = tokenProvider;
+        this.jwtokenProvider = jwtokenProvider;
     }
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(ApprovalRequest.RegisterRequest request) {
         validateRegistration(request);
 
         String email = normalizeEmail(request.getEmail());
@@ -48,26 +48,49 @@ public class AuthenticationService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        if (request == null || isBlank(request.getEmail()) || isBlank(request.getPassword())) {
-            throw new BadCredentialsException("Email og adgangskode skal udfyldes");
-        }
 
-        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.getEmail()))
-                .orElseThrow(() -> new BadCredentialsException("Forkert email eller adgangskode"));
+        User user = userRepository
+                .findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Forkert email eller adgangskode"
+                        )
+                );
 
         if (!user.isEnabled()) {
-            throw new BadCredentialsException("Brugeren er deaktiveret");
+            throw new IllegalArgumentException(
+                    "Brugerkontoen er deaktiveret"
+            );
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Forkert email eller adgangskode");
+        boolean passwordMatches =
+                passwordEncoder.matches(
+                        request.getPassword(),
+                        user.getPassword()
+                );
+
+        if (!passwordMatches) {
+            throw new IllegalArgumentException(
+                    "Forkert email eller adgangskode"
+            );
         }
 
-        return createResponse("Du er nu logget ind", user);
+        String token = jwtokenProvider.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
+
+        return new AuthResponse(
+                "Login gennemført",
+                token,
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name()
+        );
     }
 
     private AuthResponse createResponse(String message, User user) {
-        String token = tokenProvider.generateToken(user.getEmail(), user.getRole().name());
+        String token = jwtokenProvider.generateToken(user.getEmail(), user.getRole().name());
 
         return new AuthResponse(
                 message,
@@ -78,7 +101,7 @@ public class AuthenticationService {
         );
     }
 
-    private void validateRegistration(RegisterRequest request) {
+    private void validateRegistration(ApprovalRequest.RegisterRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Registreringsdata mangler");
         }

@@ -7,15 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(
-        name = "app_users",
-        uniqueConstraints = @UniqueConstraint(name = "uk_user_email", columnNames = "email")
-)
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "users")
 public class User {
 
         @Id

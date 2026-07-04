@@ -1,6 +1,6 @@
 package dk.ek.workly.service;
 
-import dk.ek.workly.dto.CategoryResponse;
+import dk.ek.workly.dto.adminDTO.CategoryResponse;
 import dk.ek.workly.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 

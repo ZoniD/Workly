@@ -11,4 +11,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ApprovalRequest {
     private boolean approved;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegisterRequest {
+        private String name;
+        private String email;
+        private String password;
+    }
 }
