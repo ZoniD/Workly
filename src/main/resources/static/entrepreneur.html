@@ -1,287 +1,95 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="da">
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Min virksomhedsprofil | Workly</title>
-
-    <link
-            rel="stylesheet"
-            href="/css/entrepreneur.css"
-    >
-
-    <script
-            src="/js/entrepreneur.js"
-            defer
-    ></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Workly — Min fagpersonprofil</title>
+  <link rel="stylesheet" href="/css/entrepreneur.css">
+  <script defer src="/js/entrepreneur.js"></script>
 </head>
+<body class="portal-body">
+  <div class="noise"></div><div class="portal-bg"></div>
 
-<body>
+  <div class="portal-shell" id="portalShell">
+    <header class="portal-topbar">
+      <div class="container portal-nav">
+        <a href="/" class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Workly</span></a>
+        <div class="portal-actions"><span class="portal-user" id="portalUserEmail"></span><a class="btn btn-ghost btn-sm" href="/">Forside</a><button class="btn btn-ghost btn-sm" id="portalLogout" type="button">Log ud</button></div>
+      </div>
+    </header>
 
-<header class="topbar">
-    <a class="brand" href="/">
-        <span class="brand-icon">W</span>
-        <span>Workly</span>
-    </a>
+    <main class="portal-main">
+      <div class="container">
+        <div class="portal-hero">
+          <article class="identity-card">
+            <div class="identity-avatar" id="identityIcon">◼</div>
+            <h1 id="identityCompany">Henter profil…</h1>
+            <div class="identity-category" id="identityCategory">WORKLY PROFESSIONAL</div>
+            <div class="identity-owner" id="identityOwner"></div>
+            <p class="identity-description" id="identityDescription">Din profil hentes fra Workly.</p>
+            <div class="identity-meta">
+              <div class="identity-meta-row"><span>Område</span><strong id="identityLocation">—</strong></div>
+              <div class="identity-meta-row"><span>Virksomheds-email</span><strong id="identityBusinessEmail">—</strong></div>
+              <div class="identity-meta-row"><span>Telefon</span><strong id="identityPhone">—</strong></div>
+            </div>
+          </article>
 
-    <nav class="topbar-actions">
-        <a href="/">Se forsiden</a>
+          <article class="portal-overview">
+            <div class="portal-overview-head">
+              <div><span class="kicker">Professional portal</span><h2>Din Workly-profil</h2><p>Hold oplysninger og tilgængelighed ajour, så kunderne ser det rigtige.</p></div>
+              <div class="portal-status"><span class="status-pill" id="profileStatus">—</span><span class="status-pill" id="profileActive">—</span></div>
+            </div>
 
-        <button
-                id="logout-button"
-                class="secondary-button"
-                type="button"
-        >
-            Log ud
-        </button>
-    </nav>
-</header>
+            <div class="portal-metrics">
+              <div class="portal-metric"><small>Rating</small><strong class="mint" id="profileRating">—</strong></div>
+              <div class="portal-metric"><small>Kategori</small><strong id="profileCategoryMetric">—</strong></div>
+              <div class="portal-metric"><small>Profil-ID</small><strong id="profileId">—</strong></div>
+            </div>
 
-<main class="page-container">
-
-    <section class="page-heading">
-        <div>
-            <p class="eyebrow">Fagpersonportal</p>
-
-            <h1>Min virksomhedsprofil</h1>
-
-            <p>
-                Administrér de oplysninger, som besøgende
-                kan se på Workly.
-            </p>
+            <div class="availability-panel">
+              <div class="availability-copy">
+                <strong id="availabilityTitle">Jeg tager imod nye opgaver</strong>
+                <span id="availabilityText">
+        Skift status, når din kalender ændrer sig.
+    </span>
+              </div>
+            </div>
+          </article>
         </div>
 
-        <div id="profile-status" class="status-badge">
-            Indlæser...
+        <div class="portal-sections">
+          <article class="portal-card">
+            <div class="portal-card-head"><div><h3>Redigér profil</h3><small>Oplysningerne vises på din offentlige profil.</small></div><span class="admin-badge">LIVE DATA</span></div>
+            <div class="portal-card-body">
+              <div class="inline-message" id="profileMessage"></div>
+              <form class="profile-form" id="profileForm">
+                <div class="form-grid">
+                  <div class="field full"><label for="portalCompanyName">Virksomhedsnavn</label><input id="portalCompanyName" required maxlength="120"></div>
+                  <div class="field"><label for="portalBusinessEmail">Virksomheds-email</label><input id="portalBusinessEmail" type="email" required maxlength="150"></div>
+                  <div class="field"><label for="portalPhone">Telefon</label><input id="portalPhone" required maxlength="30"></div>
+                  <div class="field full"><label for="portalLocation">Område</label><input id="portalLocation" required maxlength="120"></div>
+                  <div class="field full"><label for="portalDescription">Beskrivelse</label><textarea id="portalDescription" maxlength="2000"></textarea></div>
+                </div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">Gem ændringer</button></div>
+              </form>
+            </div>
+          </article>
+
+          <aside class="portal-card">
+            <div class="portal-card-head"><div><h3>Profilkvalitet</h3><small>Små ting der gør profilen lettere at vælge.</small></div></div>
+            <div class="portal-card-body">
+              <div class="portal-tip"><b>Hold beskrivelsen konkret.</b><br>Fortæl hvilke opgaver du tager, og hvad kunden kan forvente.</div>
+              <div class="portal-tip"><b>Opdatér tilgængelighed.</b><br>Slå den fra, når du er fuldt booket — og tilbage på, når du har plads.</div>
+              <div class="portal-tip"><b>Kontaktoplysninger skal være aktuelle.</b><br>Workly bruger dem på din offentlige profil.</div>
+              <div style="margin-top:20px"><span class="kicker">Profil komplethed</span><div class="progress-line"><i id="profileCompletion"></i></div><p style="color:var(--ink-dim);font-size:.68rem;margin:8px 0 0" id="profileCompletionText">Beregner…</p></div>
+            </div>
+          </aside>
         </div>
-    </section>
+      </div>
+    </main>
+  </div>
 
-    <div id="message-box" class="message-box hidden"></div>
-
-    <section class="dashboard-grid">
-
-        <article class="panel profile-summary">
-            <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">Oversigt</p>
-                    <h2 id="summary-company-name">
-                        Virksomhed
-                    </h2>
-                </div>
-
-                <span id="summary-category" class="category-pill">
-                    Kategori
-                </span>
-            </div>
-
-            <div class="summary-list">
-                <div>
-                    <span>Ejer</span>
-                    <strong id="summary-owner">–</strong>
-                </div>
-
-                <div>
-                    <span>Område</span>
-                    <strong id="summary-location">–</strong>
-                </div>
-
-                <div>
-                    <span>Bedømmelse</span>
-                    <strong id="summary-rating">0,0</strong>
-                </div>
-
-                <div>
-                    <span>Synlig på Workly</span>
-                    <strong id="summary-active">–</strong>
-                </div>
-            </div>
-
-            <div class="availability-box">
-                <div>
-                    <strong>Tager imod nye opgaver</strong>
-
-                    <p>
-                        Denne status kan vises på din
-                        offentlige profil.
-                    </p>
-                </div>
-
-                <label class="switch">
-                    <input
-                            id="availability-toggle"
-                            type="checkbox"
-                    >
-
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </article>
-
-        <article class="panel">
-            <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">Offentlig profil</p>
-                    <h2>Redigér oplysninger</h2>
-                </div>
-            </div>
-
-            <form id="profile-form">
-
-                <label>
-                    Virksomhedsnavn
-
-                    <input
-                            id="company-name"
-                            type="text"
-                            maxlength="120"
-                            required
-                    >
-                </label>
-
-                <label>
-                    Beskrivelse
-
-                    <textarea
-                            id="description"
-                            rows="7"
-                            maxlength="2000"
-                    ></textarea>
-                </label>
-
-                <div class="form-row">
-                    <label>
-                        Telefonnummer
-
-                        <input
-                                id="phone"
-                                type="text"
-                                maxlength="30"
-                                required
-                        >
-                    </label>
-
-                    <label>
-                        Virksomhedsemail
-
-                        <input
-                                id="business-email"
-                                type="email"
-                                maxlength="150"
-                                required
-                        >
-                    </label>
-                </div>
-
-                <label>
-                    Område
-
-                    <input
-                            id="location"
-                            type="text"
-                            maxlength="120"
-                            required
-                    >
-                </label>
-
-                <label>
-                    Fagkategori
-
-                    <input
-                            id="category"
-                            type="text"
-                            readonly
-                    >
-
-                    <small>
-                        Kontakt Workly-administratoren,
-                        hvis kategorien skal ændres.
-                    </small>
-                </label>
-
-                <div class="form-actions">
-                    <button
-                            class="primary-button"
-                            type="submit"
-                    >
-                        Gem ændringer
-                    </button>
-                </div>
-
-            </form>
-        </article>
-
-        <article class="panel preview-panel">
-            <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">Forhåndsvisning</p>
-                    <h2>Sådan ser profilen ud</h2>
-                </div>
-            </div>
-
-            <div class="public-preview">
-                <div class="preview-top">
-                    <div
-                            id="preview-icon"
-                            class="preview-icon"
-                    >
-                        🔧
-                    </div>
-
-                    <div>
-                        <h3 id="preview-company">
-                            Virksomhed
-                        </h3>
-
-                        <p id="preview-category">
-                            Kategori
-                        </p>
-                    </div>
-                </div>
-
-                <p
-                        id="preview-description"
-                        class="preview-description"
-                >
-                    Ingen beskrivelse endnu.
-                </p>
-
-                <div class="preview-details">
-                    <span id="preview-location">
-                        📍 Område
-                    </span>
-
-                    <span id="preview-rating">
-                        ⭐ 0,0
-                    </span>
-                </div>
-
-                <div
-                        id="preview-availability"
-                        class="availability-label"
-                >
-                    Tager imod nye opgaver
-                </div>
-
-                <div class="preview-contact">
-                    <a id="preview-phone" href="#">
-                        Ring
-                    </a>
-
-                    <a id="preview-email" href="#">
-                        Send email
-                    </a>
-                </div>
-            </div>
-        </article>
-
-    </section>
-
-</main>
-
+  <div class="toast-stack" id="toastStack"></div>
 </body>
 </html>

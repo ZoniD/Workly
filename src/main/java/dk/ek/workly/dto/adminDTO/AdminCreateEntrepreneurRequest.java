@@ -1,10 +1,7 @@
 package dk.ek.workly.dto.adminDTO;
-
 import lombok.Getter;
 import lombok.Setter;
-
-@Getter
-@Setter
+@Getter @Setter
 public class AdminCreateEntrepreneurRequest {
     private String userName;
     private String userEmail;

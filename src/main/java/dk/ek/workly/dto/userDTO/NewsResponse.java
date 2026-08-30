@@ -1,13 +1,9 @@
 package dk.ek.workly.dto.userDTO;
-
 import dk.ek.workly.model.NewsStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
 import java.time.LocalDateTime;
-
-@Getter
-@AllArgsConstructor
+@Getter @AllArgsConstructor
 public class NewsResponse {
     private Long id;
     private String title;

@@ -1,13 +1,9 @@
 package dk.ek.workly.dto.adminDTO;
-
 import dk.ek.workly.model.EntrepreneurStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
 import java.time.LocalDateTime;
-
-@Getter
-@AllArgsConstructor
+@Getter @AllArgsConstructor
 public class AdminEntrepreneurResponse {
     private Long id;
     private Long userId;

@@ -23,34 +23,21 @@ public class AdminInitializer implements CommandLineRunner {
     @Value("${admin.password:}")
     private String adminPassword;
 
-    public AdminInitializer(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+    public AdminInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) {
-        if (adminEmail == null || adminEmail.isBlank()
-                || adminPassword == null || adminPassword.isBlank()) {
-            return;
-        }
-
+        if (adminEmail == null || adminEmail.isBlank() || adminPassword == null || adminPassword.isBlank()) return;
         String normalizedEmail = adminEmail.trim().toLowerCase();
-
-        User admin = userRepository.findByEmailIgnoreCase(normalizedEmail)
-                .orElseGet(User::new);
-
+        User admin = userRepository.findByEmailIgnoreCase(normalizedEmail).orElseGet(User::new);
         admin.setName(adminName);
         admin.setEmail(normalizedEmail);
         admin.setRole(Role.ADMIN);
         admin.setEnabled(true);
-
-        if (admin.getId() == null) {
-            admin.setPassword(passwordEncoder.encode(adminPassword));
-        }
-
+        if (admin.getId() == null) admin.setPassword(passwordEncoder.encode(adminPassword));
         userRepository.save(admin);
     }
 }

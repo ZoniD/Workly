@@ -1,1399 +1,645 @@
-const API_BASE =
-    window.location.port === "8080"
-        ? "/api"
-        : "http://localhost:8080/api";
+(() => {
+  'use strict';
 
+  const API = '';
+  const TOKEN_KEY = 'worklyToken';
+  const AUTH_KEY = 'worklyAuth';
 
-const state = {
+  const state = {
     categories: [],
     professionals: [],
     news: [],
-    selectedCategoryId: null,
-    searchText: "",
-    locationText: "",
-    sortBy: "rating"
-};
-
-
-const elements = {
-    categoryGrid: document.querySelector("#category-grid"),
-    professionalGrid: document.querySelector("#professional-grid"),
-    newsGrid: document.querySelector("#news-grid"),
-
-    resultCount: document.querySelector("#result-count"),
-    professionalCount: document.querySelector("#professional-count"),
-    clearCategory: document.querySelector("#clear-category"),
-
-    searchForm: document.querySelector("#search-form"),
-    searchInput: document.querySelector("#search-input"),
-    locationInput: document.querySelector("#location-input"),
-    sortSelect: document.querySelector("#sort-select"),
-
-    profileCategory: document.querySelector("#profile-category"),
-
-    loginButton: document.querySelector("#login-button"),
-    profileButton: document.querySelector("#profile-button"),
-    ctaProfileButton: document.querySelector("#cta-profile-button"),
-    logoutButton: document.querySelector("#logout-button"),
-
-    adminDashboardButton:
-        document.querySelector("#admin-dashboard-button"),
-
-    userArea: document.querySelector("#user-area"),
-    userName: document.querySelector("#user-name"),
-
-    loginTab: document.querySelector("#login-tab"),
-    registerTab: document.querySelector("#register-tab"),
-
-    loginForm: document.querySelector("#login-form"),
-    registerForm: document.querySelector("#register-form"),
-    profileForm: document.querySelector("#profile-form"),
-
-    toast: document.querySelector("#toast")
-};
-
-
-let toastTimer;
-
-
-// ==================================================
-// INITIALISERING
-// ==================================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-    bindEvents();
-    updateUserArea();
-    await loadInitialData();
-});
-
-
-async function loadInitialData() {
-    await loadCategories();
-    await loadProfessionals();
-    await loadNews();
-
-    populateProfileCategories();
-    renderCategories();
-    renderProfessionals();
-    renderNews();
-}
-
-
-async function loadCategories() {
-    try {
-        const response = await apiRequest(
-            "/categories",
-            {
-                auth: false
-            }
-        );
-
-        state.categories = toArray(response);
-
-    } catch (error) {
-        console.error(
-            "Kunne ikke hente kategorier:",
-            error
-        );
-
-        state.categories = [];
-
-        showToast(
-            `Kategorier kunne ikke hentes: ${error.message}`,
-            true
-        );
-    }
-}
-
-
-async function loadProfessionals() {
-    try {
-        const response = await apiRequest(
-            "/entrepreneurs",
-            {
-                auth: false
-            }
-        );
-
-        state.professionals = toArray(response);
-
-    } catch (error) {
-        console.error(
-            "Kunne ikke hente fagfolk:",
-            error
-        );
-
-        state.professionals = [];
-
-        showToast(
-            `Fagfolk kunne ikke hentes: ${error.message}`,
-            true
-        );
-    }
-}
-
-
-async function loadNews() {
-    try {
-        const response = await apiRequest(
-            "/news",
-            {
-                auth: false
-            }
-        );
-
-        state.news = toArray(response);
-
-    } catch (error) {
-        console.error(
-            "Kunne ikke hente nyheder:",
-            error
-        );
-
-        state.news = [];
-    }
-}
-
-
-// ==================================================
-// EVENTS
-// ==================================================
-
-function bindEvents() {
-    elements.searchForm?.addEventListener(
-        "submit",
-        handleSearch
-    );
-
-    elements.sortSelect?.addEventListener(
-        "change",
-        event => {
-            state.sortBy = event.target.value;
-            renderProfessionals();
-        }
-    );
-
-    elements.clearCategory?.addEventListener(
-        "click",
-        () => {
-            state.selectedCategoryId = null;
-            elements.clearCategory.hidden = true;
-
-            renderCategories();
-            renderProfessionals();
-        }
-    );
-
-    elements.loginButton?.addEventListener(
-        "click",
-        () => openModal("auth-modal")
-    );
-
-    elements.profileButton?.addEventListener(
-        "click",
-        handleProfileButton
-    );
-
-    elements.ctaProfileButton?.addEventListener(
-        "click",
-        handleProfileButton
-    );
-
-    elements.logoutButton?.addEventListener(
-        "click",
-        () => logout(true)
-    );
-
-    elements.loginTab?.addEventListener(
-        "click",
-        () => switchAuthView("login")
-    );
-
-    elements.registerTab?.addEventListener(
-        "click",
-        () => switchAuthView("register")
-    );
-
-    elements.loginForm?.addEventListener(
-        "submit",
-        handleLogin
-    );
-
-    elements.registerForm?.addEventListener(
-        "submit",
-        handleRegister
-    );
-
-    elements.profileForm?.addEventListener(
-        "submit",
-        handleCreateProfile
-    );
-
-    document
-        .querySelectorAll("[data-close-modal]")
-        .forEach(element => {
-            element.addEventListener(
-                "click",
-                () => {
-                    closeModal(
-                        element.dataset.closeModal
-                    );
-                }
-            );
-        });
-
-    document.addEventListener(
-        "keydown",
-        event => {
-            if (event.key === "Escape") {
-                document
-                    .querySelectorAll(".modal.open")
-                    .forEach(modal => {
-                        closeModal(modal.id);
-                    });
-            }
-        }
-    );
-}
-
-
-function handleSearch(event) {
-    event.preventDefault();
-
-    state.searchText =
-        elements.searchInput
-            ?.value
-            .trim()
-            .toLowerCase() || "";
-
-    state.locationText =
-        elements.locationInput
-            ?.value
-            .trim()
-            .toLowerCase() || "";
-
-    renderProfessionals();
-
-    document
-        .querySelector("#professionals")
-        ?.scrollIntoView({
-            behavior: "smooth"
-        });
-}
-
-
-// ==================================================
-// API
-// ==================================================
-
-async function apiRequest(path, options = {}) {
-    const {
-        auth = true,
-        headers: customHeaders = {},
-        ...fetchOptions
-    } = options;
-
-    const headers = {
-        Accept: "application/json",
-        ...customHeaders
-    };
-
-    if (
-        fetchOptions.body &&
-        !headers["Content-Type"]
-    ) {
-        headers["Content-Type"] =
-            "application/json";
-    }
-
-    if (auth) {
-        const token =
-            localStorage.getItem("worklyToken");
-
-        if (token) {
-            headers.Authorization =
-                `Bearer ${token}`;
-        }
-    }
-
-    const response = await fetch(
-        `${API_BASE}${path}`,
-        {
-            ...fetchOptions,
-            headers
-        }
-    );
-
-    const responseText =
-        await response.text();
-
-    let data = null;
-
-    if (responseText) {
-        try {
-            data = JSON.parse(responseText);
-        } catch {
-            data = {
-                message: responseText
-            };
-        }
+    activeCategoryId: '',
+    search: '',
+    auth: readAuth(),
+    token: localStorage.getItem(TOKEN_KEY) || ''
+  };
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  function init() {
+    bindNavigation();
+    bindModals();
+    bindAuth();
+    bindApplication();
+    bindBrowse();
+    syncAuthUi();
+    init3DScene();
+    Promise.allSettled([loadCategories(), loadProfessionals(), loadNews()]);
+  }
+
+  function readAuth() {
+    try { return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); }
+    catch { return null; }
+  }
+
+  function saveAuth(data) {
+    const auth = { name: data.name, email: data.email, role: data.role };
+    state.auth = auth;
+    state.token = data.token || state.token;
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
+    syncAuthUi();
+  }
+
+  function clearAuth() {
+    state.auth = null;
+    state.token = '';
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    syncAuthUi();
+  }
+
+  async function api(path, options = {}) {
+    const headers = new Headers(options.headers || {});
+    if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (state.token) headers.set('Authorization', `Bearer ${state.token}`);
+
+    const response = await fetch(`${API}${path}`, { ...options, headers });
+    const type = response.headers.get('content-type') || '';
+    let body = null;
+    if (type.includes('application/json')) body = await response.json();
+    else {
+      const text = await response.text();
+      body = text || null;
     }
 
     if (!response.ok) {
-        throw new Error(
-            `${path} gav status ${response.status}: ` +
-            `${data?.message ||
-            response.statusText ||
-            "Ukendt fejl"}`
-        );
+      const message = typeof body === 'object' && body?.message
+        ? body.message
+        : typeof body === 'string' && body
+          ? body
+          : `Request failed (${response.status})`;
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  }
+
+  function bindNavigation() {
+    const topbar = $('#topbar');
+    const update = () => topbar?.classList.toggle('scrolled', window.scrollY > 14);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+
+    $('#primaryNavButton')?.addEventListener('click', () => {
+      if (state.auth?.role?.includes('ADMIN')) location.href = '/admin.html';
+      else if (state.auth?.role?.includes('ENTREPRENEUR')) location.href = '/entrepreneur.html';
+      else document.querySelector('#professionals')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    $('#heroJoinButton')?.addEventListener('click', openApplicationFlow);
+    $('#bottomJoinButton')?.addEventListener('click', openApplicationFlow);
+  }
+
+  function syncAuthUi() {
+    const loginButton = $('#loginButton');
+    const chip = $('#userChip');
+    const chipText = $('#userChipText');
+    const primary = $('#primaryNavButton');
+
+    if (!state.auth) {
+      chip?.classList.remove('visible');
+      if (loginButton) {
+        loginButton.textContent = 'Log ind';
+        loginButton.onclick = () => openModal('authModal');
+      }
+      if (primary) primary.textContent = 'Find en fagperson';
+      return;
     }
 
-    return data;
-}
-
-
-// ==================================================
-// KATEGORIER
-// ==================================================
-
-function renderCategories() {
-    if (!elements.categoryGrid) {
-        return;
+    chip?.classList.add('visible');
+    if (chipText) chipText.textContent = state.auth.name || state.auth.email || 'Logget ind';
+    if (loginButton) {
+      loginButton.textContent = 'Log ud';
+      loginButton.onclick = () => {
+        clearAuth();
+        toast('Du er logget ud.', 'success');
+      };
     }
-
-    if (!state.categories.length) {
-        elements.categoryGrid.innerHTML = `
-            <div class="empty-state">
-                <span>🧰</span>
-
-                <h3>
-                    Ingen kategorier endnu
-                </h3>
-
-                <p>
-                    Der blev ikke fundet nogen kategorier.
-                </p>
-            </div>
-        `;
-
-        return;
+    if (primary) {
+      primary.textContent = state.auth.role?.includes('ADMIN')
+        ? 'Åbn admin'
+        : state.auth.role?.includes('ENTREPRENEUR')
+          ? 'Min profil'
+          : 'Find en fagperson';
     }
+  }
 
-    elements.categoryGrid.innerHTML =
-        state.categories
-            .map(category => `
-                <button
-                    class="category-card ${
-                state.selectedCategoryId ===
-                Number(category.id)
-                    ? "active"
-                    : ""
-            }"
-                    type="button"
-                    data-category-id="${category.id}"
-                >
-                    <span class="category-icon">
-                        ${escapeHtml(
-                category.icon || "🛠️"
-            )}
-                    </span>
+  function bindModals() {
+    $$('[data-close-modal]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.closeModal)));
+    $$('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('mousedown', e => {
+      if (e.target === backdrop) closeModal(backdrop.id);
+    }));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') $$('.modal-backdrop.open').forEach(modal => closeModal(modal.id));
+    });
+  }
 
-                    <span>
-                        <strong>
-                            ${escapeHtml(category.name)}
-                        </strong>
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('open');
+    document.body.classList.add('modal-open');
+    requestAnimationFrame(() => modal.querySelector('input,select,textarea,button')?.focus());
+  }
 
-                        <small>
-                            ${escapeHtml(
-                category.description ||
-                "Find lokale fagfolk"
-            )}
-                        </small>
-                    </span>
-                </button>
-            `)
-            .join("");
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal?.classList.remove('open');
+    if (!document.querySelector('.modal-backdrop.open')) document.body.classList.remove('modal-open');
+  }
 
-    elements.categoryGrid
-        .querySelectorAll("[data-category-id]")
-        .forEach(button => {
-            button.addEventListener(
-                "click",
-                () => {
-                    state.selectedCategoryId =
-                        Number(
-                            button.dataset.categoryId
-                        );
+  function bindAuth() {
+    $('#loginButton')?.addEventListener('click', () => !state.auth && openModal('authModal'));
+    const loginTab = $('#loginTab');
+    const registerTab = $('#registerTab');
+    const loginForm = $('#loginForm');
+    const registerForm = $('#registerForm');
 
-                    if (elements.clearCategory) {
-                        elements.clearCategory.hidden =
-                            false;
-                    }
+    const setTab = mode => {
+      const login = mode === 'login';
+      loginTab?.classList.toggle('active', login);
+      registerTab?.classList.toggle('active', !login);
+      if (loginForm) loginForm.hidden = !login;
+      if (registerForm) registerForm.hidden = login;
+      setInlineMessage('authMessage', '', '');
+    };
 
-                    renderCategories();
-                    renderProfessionals();
+    loginTab?.addEventListener('click', () => setTab('login'));
+    registerTab?.addEventListener('click', () => setTab('register'));
 
-                    document
-                        .querySelector("#professionals")
-                        ?.scrollIntoView({
-                            behavior: "smooth"
-                        });
-                }
-            );
+    loginForm?.addEventListener('submit', async e => {
+      e.preventDefault();
+      setInlineMessage('authMessage', '', '');
+      const submit = e.currentTarget.querySelector('button[type="submit"]');
+      setBusy(submit, true, 'Logger ind…');
+      try {
+        const data = await api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email: $('#loginEmail').value.trim(), password: $('#loginPassword').value })
         });
-}
+        saveAuth(data);
+        setInlineMessage('authMessage', data.message || 'Du er logget ind.', 'success');
+        toast(`Velkommen${data.name ? `, ${data.name}` : ''}.`, 'success');
+        setTimeout(() => {
+          closeModal('authModal');
+          if (data.role?.includes('ADMIN')) location.href = '/admin.html';
+          else if (data.role?.includes('ENTREPRENEUR')) location.href = '/entrepreneur.html';
+        }, 450);
+      } catch (error) {
+        setInlineMessage('authMessage', error.message, 'error');
+      } finally { setBusy(submit, false, 'Log ind'); }
+    });
 
+    registerForm?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const submit = e.currentTarget.querySelector('button[type="submit"]');
+      setBusy(submit, true, 'Opretter…');
+      try {
+        const data = await api('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: $('#registerName').value.trim(),
+            email: $('#registerEmail').value.trim(),
+            password: $('#registerPassword').value
+          })
+        });
+        saveAuth(data);
+        setInlineMessage('authMessage', data.message || 'Din konto er oprettet.', 'success');
+        toast('Konto oprettet.', 'success');
+        setTimeout(() => closeModal('authModal'), 550);
+      } catch (error) {
+        setInlineMessage('authMessage', error.message, 'error');
+      } finally { setBusy(submit, false, 'Opret konto'); }
+    });
+  }
 
-function populateProfileCategories() {
-    if (!elements.profileCategory) {
-        return;
+  function openApplicationFlow() {
+    if (!state.auth) {
+      openModal('authModal');
+      setInlineMessage('authMessage', 'Opret eller log ind på din konto først. Derefter kan du sende din fagpersonansøgning.', 'success');
+      return;
     }
-
-    elements.profileCategory.innerHTML = `
-        <option value="">
-            Vælg fagområde
-        </option>
-
-        ${state.categories
-        .map(category => `
-                <option value="${category.id}">
-                    ${escapeHtml(category.name)}
-                </option>
-            `)
-        .join("")}
-    `;
-}
-
-
-// ==================================================
-// FAGFOLK
-// ==================================================
-
-function renderProfessionals() {
-    if (!elements.professionalGrid) {
-        return;
+    if (state.auth.role?.includes('ENTREPRENEUR')) {
+      location.href = '/entrepreneur.html';
+      return;
     }
+    if (state.auth.role?.includes('ADMIN')) {
+      location.href = '/admin.html';
+      return;
+    }
+    openModal('applyModal');
+  }
 
-    let professionals =
-        [...state.professionals];
+  function bindApplication() {
 
-    if (state.selectedCategoryId !== null) {
-        professionals =
-            professionals.filter(
-                professional =>
+    $('#applyForm')?.addEventListener('submit', async e => {
+
+      e.preventDefault();
+
+      if (!state.token) {
+        return openApplicationFlow();
+      }
+
+      // Save the form BEFORE await
+      const form = e.currentTarget;
+
+      const submit =
+          form.querySelector(
+              'button[type="submit"]'
+          );
+
+      setBusy(
+          submit,
+          true,
+          'Sender…'
+      );
+
+      try {
+
+        await api(
+            '/api/entrepreneurs',
+            {
+              method: 'POST',
+
+              body: JSON.stringify({
+                companyName:
+                    $('#companyName').value.trim(),
+
+                description:
+                    $('#businessDescription').value.trim(),
+
+                phone:
+                    $('#businessPhone').value.trim(),
+
+                email:
+                    $('#businessEmail').value.trim(),
+
+                location:
+                    $('#businessLocation').value.trim(),
+
+                categoryId:
                     Number(
-                        professional.categoryId
-                    ) ===
-                    state.selectedCategoryId
-            );
-    }
-
-    if (state.searchText) {
-        professionals =
-            professionals.filter(
-                professional => {
-                    const searchableText = [
-                        professional.companyName,
-                        professional.categoryName,
-                        professional.description
-                    ]
-                        .filter(Boolean)
-                        .join(" ")
-                        .toLowerCase();
-
-                    return searchableText.includes(
-                        state.searchText
-                    );
-                }
-            );
-    }
-
-    if (state.locationText) {
-        professionals =
-            professionals.filter(
-                professional =>
-                    String(
-                        professional.location || ""
+                        $('#businessCategory').value
                     )
-                        .toLowerCase()
-                        .includes(
-                            state.locationText
-                        )
-            );
-    }
-
-    professionals.sort(
-        (first, second) => {
-            if (state.sortBy === "name") {
-                return String(
-                    first.companyName || ""
-                ).localeCompare(
-                    String(
-                        second.companyName || ""
-                    ),
-                    "da"
-                );
+              })
             }
+        );
 
-            if (state.sortBy === "location") {
-                return String(
-                    first.location || ""
-                ).localeCompare(
-                    String(
-                        second.location || ""
-                    ),
-                    "da"
-                );
-            }
 
-            return (
-                Number(second.rating || 0) -
-                Number(first.rating || 0)
-            );
+        // Success
+        setInlineMessage(
+            'applyMessage',
+            '',
+            ''
+        );
+
+        toast(
+            'Fagpersonprofil sendt til godkendelse.',
+            'success'
+        );
+
+
+        // Reset safely
+        form.reset();
+
+
+        setTimeout(
+            () => closeModal('applyModal'),
+            900
+        );
+
+      } catch (error) {
+
+        if (
+            error.status === 401 ||
+            error.status === 403
+        ) {
+          clearAuth();
         }
-    );
 
-    const count = professionals.length;
+        setInlineMessage(
+            'applyMessage',
+            error.message,
+            'error'
+        );
 
-    if (elements.resultCount) {
-        elements.resultCount.textContent =
-            `${count} ${
-                count === 1
-                    ? "fagperson"
-                    : "fagfolk"
-            }`;
+      } finally {
+
+        setBusy(
+            submit,
+            false,
+            'Send ansøgning'
+        );
+      }
+    });
+  }
+
+  function bindBrowse() {
+    $('#professionalSearch')?.addEventListener('input', e => {
+      state.search = e.target.value.trim().toLowerCase();
+      renderProfessionals();
+    });
+    $('#clearFiltersButton')?.addEventListener('click', () => {
+      state.activeCategoryId = '';
+      state.search = '';
+      if ($('#professionalSearch')) $('#professionalSearch').value = '';
+      $$('.filter-chip').forEach(btn => btn.classList.toggle('active', btn.dataset.categoryId === ''));
+      renderProfessionals();
+    });
+  }
+
+  async function loadCategories() {
+    try {
+      const data = await api('/api/categories');
+      state.categories = Array.isArray(data) ? data : [];
+      renderCategories();
+      $('#statCategories').textContent = state.categories.length || '—';
+      if ($('#heroCategoryCount')) $('#heroCategoryCount').textContent = state.categories.length || '—';
+    } catch (error) {
+      console.warn('Categories could not be loaded:', error);
+      renderCategoryFallback();
+    }
+  }
+
+  function renderCategories() {
+    const wrap = $('#categoryFilters');
+    const select = $('#businessCategory');
+    if (!wrap) return;
+    wrap.innerHTML = '<button class="filter-chip active" data-category-id="" type="button">Alle fag</button>';
+    if (select) select.innerHTML = '<option value="">Vælg kategori</option>';
+
+    state.categories.forEach(category => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'filter-chip';
+      button.dataset.categoryId = category.id;
+      button.innerHTML = `<span>${escapeHtml(displayIcon(category))}</span><span>${escapeHtml(category.name)}</span>`;
+      button.addEventListener('click', () => {
+        state.activeCategoryId = String(category.id);
+        $$('.filter-chip').forEach(btn => btn.classList.toggle('active', btn === button));
+        renderProfessionals();
+      });
+      wrap.appendChild(button);
+
+      if (select) {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = `${displayIcon(category)} ${category.name}`.trim();
+        select.appendChild(option);
+      }
+    });
+
+    wrap.querySelector('[data-category-id=""]')?.addEventListener('click', e => {
+      state.activeCategoryId = '';
+      $$('.filter-chip').forEach(btn => btn.classList.toggle('active', btn === e.currentTarget));
+      renderProfessionals();
+    });
+  }
+
+  function renderCategoryFallback() {
+    state.categories = [
+      ['Maler','🎨'],['Tømrer','🪚'],['Elektriker','⚡'],['VVS','🔧'],['Murer','🧱'],['Gartner','🌿'],['Rengøring','🧹'],['Gulvlægger','🪵']
+    ].map((x,i) => ({ id:i+1, name:x[0], icon:x[1] }));
+    renderCategories();
+  }
+
+  async function loadProfessionals() {
+    try {
+      const data = await api('/api/entrepreneurs');
+      state.professionals = Array.isArray(data) ? data : [];
+      $('#statProfessionals').innerHTML = `<span>${state.professionals.length}</span>`;
+      renderProfessionals();
+    } catch (error) {
+      console.warn('Professionals could not be loaded:', error);
+      const grid = $('#professionalsGrid');
+      if (grid) grid.innerHTML = '<div class="empty-state">Fagpersoner kunne ikke hentes lige nu. Start backend og genindlæs siden.</div>';
+    }
+  }
+
+  function renderProfessionals() {
+    const grid = $('#professionalsGrid');
+    if (!grid) return;
+    let list = state.professionals;
+    if (state.activeCategoryId) list = list.filter(p => String(p.categoryId) === state.activeCategoryId);
+    if (state.search) {
+      list = list.filter(p => [p.companyName,p.location,p.categoryName,p.description]
+        .some(value => String(value || '').toLowerCase().includes(state.search)));
     }
 
-    if (elements.professionalCount) {
-        elements.professionalCount.textContent =
-            String(
-                state.professionals.length
-            );
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty-state">Ingen profiler matcher dit filter endnu.</div>';
+      return;
     }
 
-    if (!professionals.length) {
-        elements.professionalGrid.innerHTML = `
-            <div class="empty-state">
-                <span>🔎</span>
+    grid.innerHTML = list.map(p => {
+      const rating = Number(p.rating || 0).toFixed(1);
+      return `<article class="pro-card">
+        <div class="pro-card-head">
+          <div class="pro-avatar">${escapeHtml(displayIcon({name:p.categoryName, icon:p.categoryIcon}))}</div>
+          <span class="availability ${p.availableForWork ? 'on' : ''}">${p.availableForWork ? 'LEDIG' : 'OPTAGET'}</span>
+        </div>
+        <h3>${escapeHtml(p.companyName || 'Fagperson')}</h3>
+        <div class="category">${escapeHtml(p.categoryName || 'Kategori')}</div>
+        <p>${escapeHtml(p.description || 'Ingen beskrivelse endnu.')}</p>
+        <div class="pro-info">
+          <span class="info-tag">⌖ ${escapeHtml(p.location || 'Område ikke angivet')}</span>
+          <span class="info-tag"><span class="star">★</span> ${rating}</span>
+        </div>
+        <div class="pro-card-foot">
+          <a class="contact-link" href="mailto:${encodeURIComponent(p.email || '')}">${escapeHtml(p.email || 'Kontakt')}</a>
+          ${p.phone ? `<a class="contact-link" href="tel:${escapeHtml(p.phone)}">${escapeHtml(p.phone)}</a>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+  }
 
-                <h3>
-                    Ingen profiler matcher din søgning
-                </h3>
-
-                <p>
-                    Prøv et andet fagområde eller et bredere område.
-                </p>
-            </div>
-        `;
-
-        return;
+  async function loadNews() {
+    try {
+      const data = await api('/api/news');
+      state.news = Array.isArray(data) ? data : [];
+      renderNews();
+    } catch (error) {
+      console.warn('News could not be loaded:', error);
+      const grid = $('#newsGrid');
+      if (grid) grid.innerHTML = '<div class="empty-state">Der er ingen nyheder at vise lige nu.</div>';
     }
+  }
 
-    elements.professionalGrid.innerHTML =
-        professionals
-            .map(professional => {
-                const companyName =
-                    professional.companyName ||
-                    "Ukendt virksomhed";
-
-                const initials =
-                    getInitials(companyName);
-
-                const rating =
-                    Number(
-                        professional.rating || 0
-                    );
-
-                const ratingText =
-                    rating > 0
-                        ? `★ ${rating.toFixed(1)}`
-                        : "Ny profil";
-
-                return `
-                    <article class="professional-card">
-
-                        <div class="professional-top">
-
-                            <div class="avatar">
-                                ${escapeHtml(initials)}
-                            </div>
-
-                            <span class="rating-badge">
-                                ${ratingText}
-                            </span>
-
-                        </div>
-
-                        <h3>
-                            ${escapeHtml(companyName)}
-                        </h3>
-
-                        <span class="professional-category">
-
-                            ${escapeHtml(
-                    professional.categoryIcon ||
-                    "🛠️"
-                )}
-
-                            ${escapeHtml(
-                    professional.categoryName ||
-                    "Fagområde"
-                )}
-
-                        </span>
-
-                        <p class="professional-description">
-
-                            ${escapeHtml(
-                    professional.description ||
-                    "Denne virksomhed har endnu ikke tilføjet en beskrivelse."
-                )}
-
-                        </p>
-
-                        <div class="professional-meta">
-
-                            <span>
-                                📍
-                                ${escapeHtml(
-                    professional.location ||
-                    "Område ikke angivet"
-                )}
-                            </span>
-
-                            ${
-                    professional.phone
-                        ? `
-                                        <span>
-                                            ☎
-                                            ${escapeHtml(
-                            professional.phone
-                        )}
-                                        </span>
-                                    `
-                        : ""
-                }
-
-                        </div>
-
-                        <div class="professional-actions">
-
-                            ${
-                    professional.phone
-                        ? `
-                                        <a
-                                            class="contact-primary"
-                                            href="tel:${encodeURIComponent(
-                            professional.phone
-                        )}"
-                                        >
-                                            Ring op
-                                        </a>
-                                    `
-                        : `
-                                        <span
-                                            class="contact-primary button"
-                                            aria-disabled="true"
-                                        >
-                                            Intet nummer
-                                        </span>
-                                    `
-                }
-
-                            ${
-                    professional.email
-                        ? `
-                                        <a
-                                            class="contact-secondary"
-                                            href="mailto:${encodeURIComponent(
-                            professional.email
-                        )}"
-                                        >
-                                            Send email
-                                        </a>
-                                    `
-                        : `
-                                        <span
-                                            class="contact-secondary button"
-                                            aria-disabled="true"
-                                        >
-                                            Ingen email
-                                        </span>
-                                    `
-                }
-
-                        </div>
-
-                    </article>
-                `;
-            })
-            .join("");
-}
-
-
-// ==================================================
-// NYHEDER
-// ==================================================
-
-function renderNews() {
-    if (!elements.newsGrid) {
-        return;
+  function renderNews() {
+    const grid = $('#newsGrid');
+    if (!grid) return;
+    const items = state.news.slice(0, 3);
+    if (!items.length) {
+      grid.innerHTML = '<div class="empty-state">Der er ingen publicerede nyheder endnu.</div>';
+      return;
     }
+    grid.innerHTML = items.map((news, index) => `<article class="news-card ${index === 0 || news.featured ? 'featured' : ''}">
+      <div class="news-image">
+        ${news.imageUrl ? `<img src="${escapeAttr(news.imageUrl)}" alt="">` : ''}
+        <div class="news-geometry"></div>
+      </div>
+      <div class="news-body">
+        <div class="news-meta">${news.featured ? 'FEATURED · ' : ''}WORKLY NEWS</div>
+        <h3>${escapeHtml(news.title || 'Opdatering')}</h3>
+        <p>${escapeHtml(news.summary || news.content || '')}</p>
+        <div class="news-footer"><span>${escapeHtml(news.authorName || 'Workly')}</span><span>${formatDate(news.publishedAt || news.createdAt)}</span></div>
+      </div>
+    </article>`).join('');
+  }
 
-    if (!state.news.length) {
-        elements.newsGrid.innerHTML = `
-            <div class="empty-state">
-                <span>✦</span>
-
-                <h3>
-                    Ingen nyheder endnu
-                </h3>
-
-                <p>
-                    Publicerede nyheder vises her.
-                </p>
-            </div>
-        `;
-
-        return;
+  function setBusy(button, busy, label) {
+    if (!button) return;
+    if (busy) {
+      button.dataset.label = button.textContent;
+      button.disabled = true;
+      button.textContent = label;
+    } else {
+      button.disabled = false;
+      button.textContent = button.dataset.label || label;
     }
+  }
 
-    elements.newsGrid.innerHTML =
-        state.news
-            .map(news => `
-                <article
-                    class="home-news-card ${
-                news.featured
-                    ? "featured"
-                    : ""
-            }"
-                >
+  function setInlineMessage(id, message, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message || '';
+    el.className = `inline-message${message ? ` show ${type || ''}` : ''}`;
+  }
 
-                    ${
-                news.imageUrl
-                    ? `
-                                <img
-                                    src="${escapeHtml(
-                        news.imageUrl
-                    )}"
-                                    alt=""
-                                    loading="lazy"
-                                >
-                            `
-                    : `
-                                <div class="news-placeholder">
-                                    W
-                                </div>
-                            `
-            }
+  function toast(message, type = '') {
+    const stack = $('#toastStack');
+    if (!stack) return;
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = message;
+    stack.appendChild(el);
+    setTimeout(() => el.remove(), 3600);
+  }
 
-                    <div class="home-news-content">
-
-                        <div class="home-news-meta">
-
-                            ${
-                news.featured
-                    ? "<span>Fremhævet</span>"
-                    : ""
-            }
-
-                            <time>
-                                ${formatNewsDate(
-                news.publishedAt
-            )}
-                            </time>
-
-                        </div>
-
-                        <h3>
-                            ${escapeHtml(news.title)}
-                        </h3>
-
-                        <p>
-                            ${escapeHtml(
-                news.summary ||
-                news.content ||
-                ""
-            )}
-                        </p>
-
-                    </div>
-
-                </article>
-            `)
-            .join("");
-}
-
-
-function formatNewsDate(value) {
-    if (!value) {
-        return "";
-    }
-
+  function formatDate(value) {
+    if (!value) return '';
     const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('da-DK', { day:'2-digit', month:'short', year:'numeric' }).format(date);
+  }
 
-    if (Number.isNaN(date.getTime())) {
-        return "";
+  function displayIcon(category) {
+    const raw = String(category?.icon || '').trim();
+    if (raw && !/\.(png|jpe?g|svg|webp)$/i.test(raw)) return raw;
+    const map = {
+      'maler':'🎨','tømrer':'🪚','elektriker':'⚡','vvs':'🔧','murer':'🧱',
+      'gartner':'🌿','rengøring':'🧹','gulvlægger':'🪵','handyman':'🛠️'
+    };
+    return map[String(category?.name || '').toLowerCase()] || '◆';
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  }
+  function escapeAttr(value) { return escapeHtml(value); }
+
+  function init3DScene() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!window.THREE) {
+      window.addEventListener('load', () => window.THREE && startScene(), { once:true });
+      return;
+    }
+    startScene();
+  }
+
+  function startScene() {
+    const canvas = $('#scene-canvas');
+    if (!canvas || !window.THREE) return;
+    const THREE = window.THREE;
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0e1013, 0.05);
+    const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, .1, 100);
+    camera.position.set(0, 0, 15.5);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+    renderer.setSize(innerWidth, innerHeight);
+
+    scene.add(new THREE.AmbientLight(0x24313a, .65));
+    const key = new THREE.DirectionalLight(0xffffff, .8); key.position.set(5,6,7); scene.add(key);
+    const rim = new THREE.DirectionalLight(0x6fe3c4, .8); rim.position.set(-6,-3,-2); scene.add(rim);
+
+    const group = new THREE.Group();
+    group.position.set(4.8, 0.3, -4);
+    scene.add(group);
+
+    const mint = new THREE.Color(0x6fe3c4);
+    const coral = new THREE.Color(0xff6b4a);
+    const dark = new THREE.Color(0x252a31);
+    const blocks = [];
+
+    for (let i = 0; i < 18; i++) {
+      const size = .35 + Math.random() * .42;
+      const geometry = new THREE.BoxGeometry(size, size, size);
+      const baseColor = i % 8 === 2 ? mint : i % 11 === 6 ? coral : dark;
+      const material = new THREE.MeshStandardMaterial({
+        color: baseColor,
+        roughness: .42,
+        metalness: .16,
+        emissive: baseColor.clone().multiplyScalar(i % 8 === 2 ? .07 : .025)
+      });
+      const cube = new THREE.Mesh(geometry, material);
+      const angle = i * .85;
+      const radius = 2.1 + (i % 4) * .52;
+      cube.position.set(Math.cos(angle) * radius, Math.sin(angle * 1.2) * 2.6, (Math.random() - .5) * 4);
+      cube.rotation.set(Math.random()*2, Math.random()*2, Math.random()*2);
+      cube.userData.speed = .07 + Math.random() * .12;
+      cube.userData.seed = Math.random() * 10;
+      group.add(cube);
+      blocks.push(cube);
     }
 
-    return new Intl.DateTimeFormat(
-        "da-DK",
-        {
-            dateStyle: "long"
-        }
-    ).format(date);
-}
+    const ringGeo = new THREE.TorusGeometry(3.4, .015, 8, 90);
+    const ringMat = new THREE.MeshBasicMaterial({ color:0x6fe3c4, transparent:true, opacity:.16 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = 1.1;
+    group.add(ring);
 
+    const clock = new THREE.Clock();
+    let mx = 0, my = 0;
+    window.addEventListener('pointermove', e => {
+      mx = (e.clientX / innerWidth - .5) * .65;
+      my = (e.clientY / innerHeight - .5) * .4;
+    }, { passive:true });
 
-// ==================================================
-// LOGIN
-// ==================================================
-
-async function handleLogin(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    const email =
-        formData.get("email")?.trim();
-
-    const password =
-        formData.get("password");
-
-    if (!email || !password) {
-        showToast(
-            "Du skal skrive både email og adgangskode.",
-            true
-        );
-
-        return;
+    function resize() {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      group.position.x = innerWidth < 980 ? 1.6 : 4.8;
     }
+    addEventListener('resize', resize);
+    resize();
 
-    try {
-        const response = await apiRequest(
-            "/auth/login",
-            {
-                method: "POST",
-                auth: false,
-                body: JSON.stringify({
-                    email,
-                    password
-                })
-            }
-        );
-
-        saveSession(response);
-
-        closeModal("auth-modal");
-
-        form.reset();
-
-        redirectAfterLogin(
-            response.role
-        );
-
-    } catch (error) {
-        console.error(
-            "Loginfejl:",
-            error
-        );
-
-        showToast(
-            error.message,
-            true
-        );
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const scroll = window.scrollY / Math.max(document.documentElement.scrollHeight - innerHeight, 1);
+      group.rotation.y += ((mx + scroll * .75) - group.rotation.y) * .015;
+      group.rotation.x += ((my + .08 + scroll * .2) - group.rotation.x) * .015;
+      group.position.y = .3 - scroll * 3.8;
+      blocks.forEach((cube, i) => {
+        cube.rotation.x += .0015 + cube.userData.speed * .002;
+        cube.rotation.y += .002 + cube.userData.speed * .003;
+        cube.position.y += Math.sin(t * .45 + cube.userData.seed + i) * .0007;
+      });
+      ring.rotation.z = t * .035;
+      camera.position.x = Math.sin(t * .06) * .12;
+      camera.lookAt(0,0,-2);
+      renderer.render(scene, camera);
     }
-}
-
-
-// ==================================================
-// REGISTRERING
-// ==================================================
-
-async function handleRegister(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    try {
-        const response = await apiRequest(
-            "/auth/register",
-            {
-                method: "POST",
-                auth: false,
-                body: JSON.stringify({
-                    name:
-                        formData
-                            .get("name")
-                            ?.trim(),
-
-                    email:
-                        formData
-                            .get("email")
-                            ?.trim(),
-
-                    password:
-                        formData
-                            .get("password")
-                })
-            }
-        );
-
-        form.reset();
-
-        if (response?.token) {
-            saveSession(response);
-
-            closeModal("auth-modal");
-
-            redirectAfterLogin(
-                response.role
-            );
-
-            return;
-        }
-
-        switchAuthView("login");
-
-        showToast(
-            response?.message ||
-            "Brugeren blev oprettet. Du kan nu logge ind."
-        );
-
-    } catch (error) {
-        console.error(
-            "Registreringsfejl:",
-            error
-        );
-
-        showToast(
-            error.message,
-            true
-        );
-    }
-}
-
-
-// ==================================================
-// VIRKSOMHEDSPROFIL
-// ==================================================
-
-async function handleCreateProfile(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    const categoryId =
-        Number(
-            formData.get("categoryId")
-        );
-
-    if (!categoryId) {
-        showToast(
-            "Du skal vælge et fagområde.",
-            true
-        );
-
-        return;
-    }
-
-    const submitButton =
-        form.querySelector(
-            'button[type="submit"]'
-        );
-
-    try {
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent =
-                "Sender profil...";
-        }
-
-        await apiRequest(
-            "/entrepreneurs",
-            {
-                method: "POST",
-                body: JSON.stringify({
-                    companyName:
-                        formData
-                            .get("companyName")
-                            ?.trim(),
-
-                    description:
-                        formData
-                            .get("description")
-                            ?.trim(),
-
-                    phone:
-                        formData
-                            .get("phone")
-                            ?.trim(),
-
-                    email:
-                        formData
-                            .get("email")
-                            ?.trim(),
-
-                    location:
-                        formData
-                            .get("location")
-                            ?.trim(),
-
-                    categoryId
-                })
-            }
-        );
-
-        form.reset();
-
-        closeModal("profile-modal");
-
-        showToast(
-            "Profilen er sendt til godkendelse."
-        );
-
-    } catch (error) {
-        console.error(
-            "Fejl ved oprettelse af profil:",
-            error
-        );
-
-        showToast(
-            error.message ||
-            "Profilen kunne ikke oprettes.",
-            true
-        );
-
-    } finally {
-        if (submitButton) {
-            submitButton.disabled = false;
-
-            submitButton.textContent =
-                "Send profil til godkendelse";
-        }
-    }
-}
-
-
-function handleProfileButton() {
-    if (
-        !localStorage.getItem(
-            "worklyToken"
-        )
-    ) {
-        switchAuthView("register");
-
-        openModal("auth-modal");
-
-        showToast(
-            "Opret eller log ind på en bruger først."
-        );
-
-        return;
-    }
-
-    openModal("profile-modal");
-}
-
-
-// ==================================================
-// SESSION OG BRUGEROMRÅDE
-// ==================================================
-
-function saveSession(response) {
-    if (!response?.token) {
-        throw new Error(
-            "Backend returnerede ikke en JWT-token."
-        );
-    }
-
-    localStorage.setItem(
-        "worklyToken",
-        response.token
-    );
-
-    localStorage.setItem(
-        "worklyUser",
-        JSON.stringify({
-            name: response.name,
-            email: response.email,
-            role: response.role
-        })
-    );
-
-    updateUserArea();
-}
-
-
-function redirectAfterLogin(role) {
-    const normalizedRole =
-        String(role || "")
-            .replace("ROLE_", "")
-            .toUpperCase();
-
-    if (normalizedRole === "ADMIN") {
-        window.location.href =
-            "/admin.html";
-
-        return;
-    }
-
-    if (
-        normalizedRole ===
-        "ENTREPRENEUR"
-    ) {
-        window.location.href =
-            "/entrepreneur.html";
-
-        return;
-    }
-
-    window.location.href = "/";
-}
-
-
-function logout(showMessage = true) {
-    localStorage.removeItem(
-        "worklyToken"
-    );
-
-    localStorage.removeItem(
-        "worklyUser"
-    );
-
-    updateUserArea();
-
-    if (showMessage) {
-        showToast(
-            "Du er logget ud."
-        );
-    }
-}
-
-
-function updateUserArea() {
-    const user = getStoredUser();
-
-    const loggedIn = Boolean(
-        user &&
-        localStorage.getItem(
-            "worklyToken"
-        )
-    );
-
-    const role =
-        String(user?.role || "")
-            .replace("ROLE_", "")
-            .toUpperCase();
-
-    const isAdmin =
-        loggedIn &&
-        role === "ADMIN";
-
-    if (elements.userArea) {
-        elements.userArea.hidden =
-            !loggedIn;
-    }
-
-    if (elements.loginButton) {
-        elements.loginButton.hidden =
-            loggedIn;
-    }
-
-    if (elements.userName) {
-        elements.userName.textContent =
-            loggedIn
-                ? user.name ||
-                user.email
-                : "";
-    }
-
-    if (
-        elements.adminDashboardButton
-    ) {
-        elements.adminDashboardButton.hidden =
-            !isAdmin;
-    }
-}
-
-
-function getStoredUser() {
-    try {
-        const storedUser =
-            localStorage.getItem(
-                "worklyUser"
-            );
-
-        return storedUser
-            ? JSON.parse(storedUser)
-            : null;
-
-    } catch {
-        return null;
-    }
-}
-
-
-// ==================================================
-// MODALER
-// ==================================================
-
-function switchAuthView(view) {
-    const showLogin =
-        view === "login";
-
-    if (elements.loginForm) {
-        elements.loginForm.hidden =
-            !showLogin;
-    }
-
-    if (elements.registerForm) {
-        elements.registerForm.hidden =
-            showLogin;
-    }
-
-    elements.loginTab
-        ?.classList
-        .toggle(
-            "active",
-            showLogin
-        );
-
-    elements.registerTab
-        ?.classList
-        .toggle(
-            "active",
-            !showLogin
-        );
-}
-
-
-function openModal(id) {
-    const modal =
-        document.getElementById(id);
-
-    if (!modal) {
-        return;
-    }
-
-    modal.classList.add("open");
-
-    modal.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-    document.body.classList.add(
-        "modal-open"
-    );
-}
-
-
-function closeModal(id) {
-    const modal =
-        document.getElementById(id);
-
-    if (!modal) {
-        return;
-    }
-
-    modal.classList.remove("open");
-
-    modal.setAttribute(
-        "aria-hidden",
-        "true"
-    );
-
-    if (
-        !document.querySelector(
-            ".modal.open"
-        )
-    ) {
-        document.body.classList.remove(
-            "modal-open"
-        );
-    }
-}
-
-
-// ==================================================
-// HJÆLPEFUNKTIONER
-// ==================================================
-
-function toArray(value) {
-    if (Array.isArray(value)) {
-        return value;
-    }
-
-    if (
-        Array.isArray(
-            value?.content
-        )
-    ) {
-        return value.content;
-    }
-
-    return [];
-}
-
-
-function showToast(
-    message,
-    isError = false
-) {
-    if (!elements.toast) {
-        return;
-    }
-
-    clearTimeout(toastTimer);
-
-    elements.toast.textContent =
-        message;
-
-    elements.toast.classList.toggle(
-        "error",
-        isError
-    );
-
-    elements.toast.classList.add(
-        "show"
-    );
-
-    toastTimer = setTimeout(
-        () => {
-            elements.toast
-                .classList
-                .remove("show");
-        },
-        5000
-    );
-}
-
-
-function getInitials(name) {
-    return String(name || "W")
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map(
-            word =>
-                word[0].toUpperCase()
-        )
-        .join("");
-}
-
-
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-}
+    animate();
+    requestAnimationFrame(() => canvas.classList.add('ready'));
+  }
+})();

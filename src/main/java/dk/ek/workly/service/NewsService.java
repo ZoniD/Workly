@@ -15,13 +15,10 @@ import java.util.List;
 
 @Service
 public class NewsService {
-
     private final NewsRepository newsRepository;
     private final UserRepository userRepository;
 
-    public NewsService(
-            NewsRepository newsRepository,
-            UserRepository userRepository) {
+    public NewsService(NewsRepository newsRepository, UserRepository userRepository) {
         this.newsRepository = newsRepository;
         this.userRepository = userRepository;
     }
@@ -29,70 +26,48 @@ public class NewsService {
     @Transactional
     public List<NewsResponse> getPublishedNews() {
         return newsRepository.findByStatusOrderByPublishedAtDesc(NewsStatus.PUBLISHED)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public NewsResponse getPublishedNewsById(Long id) {
         News news = newsRepository.findByIdAndStatus(id, NewsStatus.PUBLISHED)
                 .orElseThrow(() -> new IllegalArgumentException("Nyheden blev ikke fundet"));
-
         return toResponse(news);
     }
 
     @Transactional
     public List<NewsResponse> getAllForAdmin() {
-        return newsRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return newsRepository.findAllByOrderByCreatedAtDesc().stream().map(this::toResponse).toList();
     }
 
     @Transactional
-    public NewsResponse create(
-            NewsRequest request,
-            String authenticatedEmail) {
-
+    public NewsResponse create(NewsRequest request, String authenticatedEmail) {
         validate(request);
-
         User author = userRepository.findByEmailIgnoreCase(authenticatedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Administratoren blev ikke fundet"));
-
         News news = new News();
         applyRequest(news, request);
         news.setStatus(NewsStatus.DRAFT);
         news.setAuthor(author);
-
         return toResponse(newsRepository.save(news));
     }
 
     @Transactional
     public NewsResponse update(Long id, NewsRequest request) {
         validate(request);
-
         News news = findNews(id);
         applyRequest(news, request);
-
         return toResponse(newsRepository.save(news));
     }
 
     @Transactional
     public NewsResponse updateStatus(Long id, NewsStatus status) {
-        if (status == null) {
-            throw new IllegalArgumentException("Vælg en gyldig status");
-        }
-
+        if (status == null) throw new IllegalArgumentException("Vælg en gyldig status");
         News news = findNews(id);
         news.setStatus(status);
-
-        if (status == NewsStatus.PUBLISHED) {
-            news.setPublishedAt(LocalDateTime.now());
-        } else if (status == NewsStatus.DRAFT) {
-            news.setPublishedAt(null);
-        }
-
+        if (status == NewsStatus.PUBLISHED) news.setPublishedAt(LocalDateTime.now());
+        else if (status == NewsStatus.DRAFT) news.setPublishedAt(null);
         return toResponse(newsRepository.save(news));
     }
 
@@ -117,38 +92,17 @@ public class NewsService {
     }
 
     private NewsResponse toResponse(News news) {
-        return new NewsResponse(
-                news.getId(),
-                news.getTitle(),
-                news.getSummary(),
-                news.getContent(),
-                news.getImageUrl(),
-                news.isFeatured(),
-                news.getStatus(),
-                news.getAuthor().getName(),
-                news.getCreatedAt(),
-                news.getUpdatedAt(),
-                news.getPublishedAt()
-        );
+        return new NewsResponse(news.getId(), news.getTitle(), news.getSummary(), news.getContent(),
+                news.getImageUrl(), news.isFeatured(), news.getStatus(), news.getAuthor().getName(),
+                news.getCreatedAt(), news.getUpdatedAt(), news.getPublishedAt());
     }
 
     private void validate(NewsRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Nyhedsdata mangler");
-        }
-        if (isBlank(request.getTitle())) {
-            throw new IllegalArgumentException("Titel skal udfyldes");
-        }
-        if (isBlank(request.getContent())) {
-            throw new IllegalArgumentException("Nyhedstekst skal udfyldes");
-        }
+        if (request == null) throw new IllegalArgumentException("Nyhedsdata mangler");
+        if (isBlank(request.getTitle())) throw new IllegalArgumentException("Titel skal udfyldes");
+        if (isBlank(request.getContent())) throw new IllegalArgumentException("Nyhedstekst skal udfyldes");
     }
 
-    private String trimOrEmpty(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
+    private String trimOrEmpty(String value) { return value == null ? "" : value.trim(); }
+    private boolean isBlank(String value) { return value == null || value.trim().isEmpty(); }
 }

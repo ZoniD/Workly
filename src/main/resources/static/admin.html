@@ -1,675 +1,152 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="da">
-
 <head>
-    <meta charset="UTF-8">
-
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Workly Admin</title>
-
-    <link
-            rel="stylesheet"
-            href="/css/admin.css"
-    >
-
-    <script
-            src="/js/admin.js"
-            defer
-    ></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Workly Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <script defer src="/js/admin.js"></script>
 </head>
+<body class="admin-body">
+  <div class="noise"></div>
 
-<body>
+  <div class="admin-mobilebar">
+    <a href="/" class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Workly</span></a>
+    <div class="mobile-tabs">
+      <button class="active" data-panel="dashboard" type="button">Overblik</button>
+      <button data-panel="professionals" type="button">Fagpersoner</button>
+      <button data-panel="news" type="button">Nyheder</button>
+    </div>
+  </div>
 
-<div class="admin-shell">
+  <div class="admin-shell" id="adminShell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand-row">
+        <a href="/" class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Workly</span></a>
+        <span class="admin-badge">ADMIN</span>
+      </div>
 
-    <aside class="sidebar">
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <button class="active" data-panel="dashboard" type="button"><span class="nav-icon">01</span><span>Overblik</span></button>
+        <button data-panel="professionals" type="button"><span class="nav-icon">02</span><span>Fagpersoner</span></button>
+        <button data-panel="news" type="button"><span class="nav-icon">03</span><span>Nyheder</span></button>
+      </nav>
 
-        <a
-                class="brand"
-                href="/"
-        >
-            <span class="brand-mark">W</span>
-            <span>Workly</span>
-        </a>
-
-        <div class="sidebar-label">
-            Administration
+      <div class="admin-sidebar-footer">
+        <div class="admin-user">
+          <div class="admin-avatar">A</div>
+          <div><strong id="adminName">Workly Admin</strong><small id="adminEmail">admin</small></div>
         </div>
-
-        <nav
-                class="sidebar-nav"
-                aria-label="Admin navigation"
-        >
-
-            <button
-                    class="nav-item active"
-                    data-view-button="overview"
-                    type="button"
-            >
-                <span>⌂</span>
-                Oversigt
-            </button>
-
-            <button
-                    class="nav-item"
-                    data-view-button="professionals"
-                    type="button"
-            >
-                <span>🧰</span>
-                Fagpersoner
-            </button>
-
-            <button
-                    class="nav-item"
-                    data-view-button="news"
-                    type="button"
-            >
-                <span>✦</span>
-                Nyheder
-            </button>
-
-        </nav>
-
-        <div class="sidebar-footer">
-
-            <a
-                    href="/"
-                    class="nav-item link-item"
-            >
-                <span>←</span>
-                Til forsiden
-            </a>
-
-            <button
-                    id="logout-button"
-                    class="nav-item danger-text"
-                    type="button"
-            >
-                <span>↪</span>
-                Log ud
-            </button>
-
-        </div>
-
+        <button class="btn btn-ghost btn-sm admin-logout" id="adminLogout" type="button">Log ud</button>
+      </div>
     </aside>
 
-    <main class="main-content">
+    <main class="admin-main">
+      <div class="admin-top">
+        <div class="admin-title">
+          <span class="kicker">Control surface</span>
+          <h1 id="panelTitle">Overblik</h1>
+          <p id="panelSubtitle">Et hurtigt billede af hvad der sker på Workly lige nu.</p>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-ghost" id="refreshAdmin" type="button">↻ Opdater</button>
+          <button class="btn btn-primary" id="openCreateProfessional" type="button">+ Ny fagperson</button>
+        </div>
+      </div>
 
-        <header class="topbar">
+      <section class="admin-panel active" id="panel-dashboard">
+        <div class="metric-grid">
+          <article class="metric-card mint"><div class="metric-label">Afventer</div><div class="metric-value mint" id="metricPending">—</div><div class="metric-note">profiler til gennemgang</div></article>
+          <article class="metric-card"><div class="metric-label">Godkendte</div><div class="metric-value" id="metricApproved">—</div><div class="metric-note">professionelle profiler</div></article>
+          <article class="metric-card"><div class="metric-label">Aktive</div><div class="metric-value" id="metricActive">—</div><div class="metric-note">synlige profiler</div></article>
+          <article class="metric-card"><div class="metric-label">Brugere</div><div class="metric-value" id="metricUsers">—</div><div class="metric-note">registrerede konti</div></article>
+          <article class="metric-card"><div class="metric-label">Nyheder</div><div class="metric-value" id="metricNews">—</div><div class="metric-note">publicerede opslag</div></article>
+        </div>
 
-            <div>
-                <p class="eyebrow">
-                    Workly administration
-                </p>
-
-                <h1 id="page-title">
-                    Oversigt
-                </h1>
+        <div class="admin-grid-two">
+          <article class="surface-card">
+            <div class="surface-head"><div><h2>Seneste fagpersoner</h2><small>De nyeste profiler i systemet</small></div><button class="btn btn-ghost btn-sm" data-go-panel="professionals" type="button">Se alle</button></div>
+            <div class="surface-body" id="recentProfessionals"><div class="empty-state">Henter data…</div></div>
+          </article>
+          <article class="surface-card">
+            <div class="surface-head"><div><h2>Status</h2><small>Fordeling i godkendelsesflowet</small></div></div>
+            <div class="surface-body">
+              <div class="status-list">
+                <div class="status-line"><span>PENDING</span><strong id="statusPending">—</strong></div>
+                <div class="status-line"><span>APPROVED</span><strong id="statusApproved">—</strong></div>
+                <div class="status-line"><span>REJECTED</span><strong id="statusRejected">—</strong></div>
+                <div class="status-line"><span>SUSPENDED</span><strong id="statusSuspended">—</strong></div>
+              </div>
             </div>
-
-            <div class="admin-user">
-
-                <div
-                        class="admin-avatar"
-                        id="admin-initials"
-                >
-                    A
-                </div>
-
-                <div>
-                    <strong id="admin-name">
-                        Administrator
-                    </strong>
-
-                    <span id="admin-email"></span>
-                </div>
-
-            </div>
-
-        </header>
-
-        <section
-                class="view active"
-                data-view="overview"
-        >
-
-            <div class="metric-grid">
-
-                <article class="metric-card warning">
-
-                    <span class="metric-icon">
-                        ⌛
-                    </span>
-
-                    <div>
-                        <strong id="pending-count">
-                            0
-                        </strong>
-
-                        <span>
-                            Afventer godkendelse
-                        </span>
-                    </div>
-
-                </article>
-
-                <article class="metric-card success">
-
-                    <span class="metric-icon">
-                        ✓
-                    </span>
-
-                    <div>
-                        <strong id="approved-count">
-                            0
-                        </strong>
-
-                        <span>
-                            Godkendte fagpersoner
-                        </span>
-                    </div>
-
-                </article>
-
-                <article class="metric-card">
-
-                    <span class="metric-icon">
-                        ♙
-                    </span>
-
-                    <div>
-                        <strong id="user-count">
-                            0
-                        </strong>
-
-                        <span>
-                            Registrerede brugere
-                        </span>
-                    </div>
-
-                </article>
-
-                <article class="metric-card">
-
-                    <span class="metric-icon">
-                        ✦
-                    </span>
-
-                    <div>
-                        <strong id="published-news-count">
-                            0
-                        </strong>
-
-                        <span>
-                            Publicerede nyheder
-                        </span>
-                    </div>
-
-                </article>
-
-            </div>
-
-            <section class="panel">
-
-                <div class="panel-header">
-
-                    <div>
-                        <p class="eyebrow">
-                            Kræver handling
-                        </p>
-
-                        <h2>
-                            Afventende ansøgninger
-                        </h2>
-                    </div>
-
-                    <button
-                            class="secondary-button"
-                            data-go-to="professionals"
-                            type="button"
-                    >
-                        Se alle fagpersoner
-                    </button>
-
-                </div>
-
-                <div class="table-wrap">
-
-                    <table>
-
-                        <thead>
-                        <tr>
-                            <th>Virksomhed</th>
-                            <th>Bruger</th>
-                            <th>Kategori</th>
-                            <th>Område</th>
-                            <th>Handlinger</th>
-                        </tr>
-                        </thead>
-
-                        <tbody id="pending-table-body"></tbody>
-
-                    </table>
-
-                </div>
-
-            </section>
-
-        </section>
-
-        <section
-                class="view"
-                data-view="professionals"
-        >
-
-            <section class="panel">
-
-                <div class="panel-header responsive-header">
-
-                    <div>
-                        <p class="eyebrow">
-                            Administration
-                        </p>
-
-                        <h2>
-                            Fagpersoner
-                        </h2>
-                    </div>
-
-                    <div class="header-actions">
-
-                        <select
-                                id="professional-filter"
-                                aria-label="Filtrér efter status"
-                        >
-                            <option value="">
-                                Alle statusser
-                            </option>
-
-                            <option value="PENDING">
-                                Afventer
-                            </option>
-
-                            <option value="APPROVED">
-                                Godkendt
-                            </option>
-
-                            <option value="REJECTED">
-                                Afvist
-                            </option>
-
-                            <option value="SUSPENDED">
-                                Suspenderet
-                            </option>
-                        </select>
-
-                        <button
-                                id="open-professional-modal"
-                                class="primary-button"
-                                type="button"
-                        >
-                            + Tilføj fagperson
-                        </button>
-
-                    </div>
-
-                </div>
-
-                <div class="table-wrap">
-
-                    <table>
-
-                        <thead>
-                        <tr>
-                            <th>Virksomhed</th>
-                            <th>Bruger</th>
-                            <th>Kategori</th>
-                            <th>Status</th>
-                            <th>Synlig</th>
-                            <th>Handlinger</th>
-                        </tr>
-                        </thead>
-
-                        <tbody id="professional-table-body"></tbody>
-
-                    </table>
-
-                </div>
-
-            </section>
-
-        </section>
-
-        <section
-                class="view"
-                data-view="news"
-        >
-
-            <section class="panel">
-
-                <div class="panel-header responsive-header">
-
-                    <div>
-                        <p class="eyebrow">
-                            Forsiden
-                        </p>
-
-                        <h2>
-                            Nyheder
-                        </h2>
-                    </div>
-
-                    <button
-                            id="open-news-modal"
-                            class="primary-button"
-                            type="button"
-                    >
-                        + Skriv nyhed
-                    </button>
-
-                </div>
-
-                <div
-                        id="news-list"
-                        class="news-admin-list"
-                ></div>
-
-            </section>
-
-        </section>
-
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="panel-professionals">
+        <div class="toolbar">
+          <label class="search-box"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input id="adminProfessionalSearch" type="search" placeholder="Søg virksomhed, ejer eller område…"></label>
+          <select id="statusFilter"><option value="">Alle statusser</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option><option>SUSPENDED</option></select>
+        </div>
+        <div class="data-shell" id="professionalTable">
+          <div class="data-row header"><div>Virksomhed / ejer</div><div>Kategori</div><div class="hide-tablet">Område</div><div class="hide-tablet">Status</div><div>Handlinger</div></div>
+          <div class="empty-state">Henter fagpersoner…</div>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="panel-news">
+        <div class="toolbar">
+          <label class="search-box"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input id="adminNewsSearch" type="search" placeholder="Søg i nyheder…"></label>
+          <button class="btn btn-primary" id="openCreateNews" type="button">+ Nyt opslag</button>
+        </div>
+        <div class="admin-card-grid" id="adminNewsGrid"><div class="empty-state">Henter nyheder…</div></div>
+      </section>
     </main>
+  </div>
 
-</div>
-
-<div
-        class="modal"
-        id="professional-modal"
-        aria-hidden="true"
->
-
-    <div
-            class="modal-backdrop"
-            data-close-modal="professional-modal"
-    ></div>
-
-    <div class="modal-card">
-
-        <div class="modal-header">
-
-            <div>
-                <p class="eyebrow">
-                    Ny profil
-                </p>
-
-                <h2>
-                    Tilføj fagperson
-                </h2>
-            </div>
-
-            <button
-                    class="icon-button"
-                    type="button"
-                    data-close-modal="professional-modal"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <form
-                id="professional-form"
-                class="form-grid"
-        >
-
-            <label>
-                Brugerens navn
-
-                <input
-                        name="userName"
-                        required
-                        maxlength="100"
-                >
-            </label>
-
-            <label>
-                Login-email
-
-                <input
-                        name="userEmail"
-                        type="email"
-                        required
-                        maxlength="180"
-                >
-            </label>
-
-            <label>
-                Midlertidig adgangskode
-
-                <input
-                        name="temporaryPassword"
-                        type="password"
-                        required
-                        minlength="8"
-                >
-            </label>
-
-            <label>
-                Virksomhedsnavn
-
-                <input
-                        name="companyName"
-                        required
-                        maxlength="140"
-                >
-            </label>
-
-            <label>
-                Telefonnummer
-
-                <input
-                        name="phone"
-                        maxlength="30"
-                >
-            </label>
-
-            <label>
-                Virksomhedens email
-
-                <input
-                        name="businessEmail"
-                        type="email"
-                        maxlength="180"
-                >
-            </label>
-
-            <label>
-                Område
-
-                <input
-                        name="location"
-                        required
-                        maxlength="120"
-                >
-            </label>
-
-            <label>
-                Kategori
-
-                <select
-                        name="categoryId"
-                        id="admin-category-select"
-                        required
-                ></select>
-            </label>
-
-            <label class="full-width">
-                Beskrivelse
-
-                <textarea
-                        name="description"
-                        rows="4"
-                        maxlength="2000"
-                ></textarea>
-            </label>
-
-            <div class="form-actions full-width">
-
-                <button
-                        class="secondary-button"
-                        type="button"
-                        data-close-modal="professional-modal"
-                >
-                    Annuller
-                </button>
-
-                <button
-                        class="primary-button"
-                        type="submit"
-                >
-                    Opret og godkend
-                </button>
-
-            </div>
-
+  <div class="modal-backdrop" id="professionalModal" role="dialog" aria-modal="true">
+    <div class="modal wide">
+      <div class="modal-head"><div><h2>Opret fagperson</h2><p>Opret login og professionel profil i én handling.</p></div><button class="modal-close" data-close-modal="professionalModal" type="button">×</button></div>
+      <div class="modal-body">
+        <div class="inline-message" id="professionalMessage"></div>
+        <form id="createProfessionalForm">
+          <div class="form-grid">
+            <div class="field"><label>Ejers navn</label><input id="createOwnerName" required></div>
+            <div class="field"><label>Login-email</label><input id="createLoginEmail" type="email" required></div>
+            <div class="field"><label>Midlertidig adgangskode</label><input id="createTempPassword" type="password" required minlength="8"></div>
+            <div class="field"><label>Virksomhedsnavn</label><input id="createCompanyName" required></div>
+            <div class="field"><label>Virksomheds-email</label><input id="createBusinessEmail" type="email" required></div>
+            <div class="field"><label>Telefon</label><input id="createPhone" required></div>
+            <div class="field"><label>Område</label><input id="createLocation" required></div>
+            <div class="field"><label>Kategori</label><select id="createCategory" required><option value="">Vælg kategori</option></select></div>
+            <div class="field full"><label>Beskrivelse</label><textarea id="createDescription"></textarea></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-ghost" data-close-modal="professionalModal" type="button">Annuller</button><button class="btn btn-primary" type="submit">Opret fagperson</button></div>
         </form>
-
+      </div>
     </div>
+  </div>
 
-</div>
-
-<div
-        class="modal"
-        id="news-modal"
-        aria-hidden="true"
->
-
-    <div
-            class="modal-backdrop"
-            data-close-modal="news-modal"
-    ></div>
-
-    <div class="modal-card wide">
-
-        <div class="modal-header">
-
-            <div>
-                <p class="eyebrow">
-                    Forsiden
-                </p>
-
-                <h2 id="news-modal-title">
-                    Skriv nyhed
-                </h2>
-            </div>
-
-            <button
-                    class="icon-button"
-                    type="button"
-                    data-close-modal="news-modal"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <form
-                id="news-form"
-                class="form-grid"
-        >
-
-            <input
-                    type="hidden"
-                    name="newsId"
-            >
-
-            <label class="full-width">
-                Titel
-
-                <input
-                        name="title"
-                        required
-                        maxlength="180"
-                >
-            </label>
-
-            <label class="full-width">
-                Kort beskrivelse
-
-                <textarea
-                        name="summary"
-                        rows="2"
-                        maxlength="500"
-                ></textarea>
-            </label>
-
-            <label class="full-width">
-                Nyhedstekst
-
-                <textarea
-                        name="content"
-                        rows="8"
-                        required
-                ></textarea>
-            </label>
-
-            <label class="full-width">
-                Billed-URL
-
-                <input
-                        name="imageUrl"
-                        type="url"
-                        maxlength="500"
-                        placeholder="https://..."
-                >
-            </label>
-
-            <label class="checkbox-label full-width">
-
-                <input
-                        name="featured"
-                        type="checkbox"
-                >
-
-                Fremhæv nyheden på forsiden
-
-            </label>
-
-            <div class="form-actions full-width">
-
-                <button
-                        class="secondary-button"
-                        type="button"
-                        data-close-modal="news-modal"
-                >
-                    Annuller
-                </button>
-
-                <button
-                        class="primary-button"
-                        type="submit"
-                >
-                    Gem som kladde
-                </button>
-
-            </div>
-
+  <div class="modal-backdrop" id="newsModal" role="dialog" aria-modal="true">
+    <div class="modal wide">
+      <div class="modal-head"><div><h2 id="newsModalTitle">Nyt Workly-opslag</h2><p>Opret eller redigér en nyhed.</p></div><button class="modal-close" data-close-modal="newsModal" type="button">×</button></div>
+      <div class="modal-body">
+        <div class="inline-message" id="newsMessage"></div>
+        <form id="newsForm">
+          <input id="newsId" type="hidden">
+          <div class="form-grid">
+            <div class="field full"><label>Titel</label><input id="newsTitle" required></div>
+            <div class="field full"><label>Kort resumé</label><textarea id="newsSummary" style="min-height:78px"></textarea></div>
+            <div class="field full"><label>Indhold</label><textarea id="newsContent" style="min-height:160px" required></textarea></div>
+            <div class="field full"><label>Billede-URL</label><input id="newsImageUrl" type="url" placeholder="https://…"></div>
+            <div class="field full"><label style="display:flex;align-items:center;gap:9px"><input id="newsFeatured" type="checkbox" style="width:auto;min-height:0"> Fremhæv opslag</label></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-ghost" data-close-modal="newsModal" type="button">Annuller</button><button class="btn btn-primary" type="submit">Gem opslag</button></div>
         </form>
-
+      </div>
     </div>
+  </div>
 
-</div>
-
-<div
-        id="toast"
-        class="toast"
-        role="status"
-        aria-live="polite"
-></div>
-
+  <div class="toast-stack" id="toastStack"></div>
 </body>
 </html>

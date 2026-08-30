@@ -1,335 +1,100 @@
-const API_URL = "/api/entrepreneur";
-
-const token = localStorage.getItem("worklyToken");
-
-let currentProfile = null;
-
-document.addEventListener("DOMContentLoaded", initializePage);
-
-async function initializePage() {
-    if (!token) {
-        window.location.replace("/");
-        return;
-    }
-
-    registerEventListeners();
-
-    await loadProfile();
-}
-
-function registerEventListeners() {
-    document
-        .getElementById("profile-form")
-        .addEventListener("submit", updateProfile);
-
-    document
-        .getElementById("availability-toggle")
-        .addEventListener("change", updateAvailability);
-
-    document
-        .getElementById("logout-button")
-        .addEventListener("click", logout);
-}
-
-async function apiRequest(path, options = {}) {
-    const headers = {
-        ...(options.body
-            ? { "Content-Type": "application/json" }
-            : {}),
-
-        Authorization: `Bearer ${token}`,
-
-        ...options.headers
-    };
-
-    const response = await fetch(
-        `${API_URL}${path}`,
-        {
-            ...options,
-            headers
-        }
-    );
-
-    if (!response.ok) {
-        let message = `HTTP-fejl ${response.status}`;
-
-        try {
-            const body = await response.json();
-
-            message =
-                body.detail ||
-                body.message ||
-                message;
-
-        } catch {
-            const text = await response.text();
-
-            if (text) {
-                message = text;
-            }
-        }
-
-        const error = new Error(message);
-
-        error.status = response.status;
-
-        throw error;
-    }
-
-    return response.json();
-}
-
-async function loadProfile() {
-    try {
-        const profile = await apiRequest("/profile");
-
-        currentProfile = profile;
-
-        renderProfile(profile);
-
-    } catch (error) {
-        console.error("Profilen kunne ikke indlæses:", error);
-
-        if (error.status === 401 || error.status === 403) {
-            localStorage.removeItem("worklyToken");
-
-            showMessage(
-                "Du har ikke adgang til fagpersonportalen.",
-                true
-            );
-
-            setTimeout(() => {
-                window.location.replace("/");
-            }, 1800);
-
-            return;
-        }
-
-        showMessage(error.message, true);
-    }
-}
-
-async function updateProfile(event) {
-    event.preventDefault();
-
-    const request = {
-        companyName:
-        document.getElementById("company-name").value,
-
-        description:
-        document.getElementById("description").value,
-
-        phone:
-        document.getElementById("phone").value,
-
-        businessEmail:
-        document.getElementById("business-email").value,
-
-        location:
-        document.getElementById("location").value
-    };
-
-    try {
-        const profile = await apiRequest(
-            "/profile",
-            {
-                method: "PUT",
-                body: JSON.stringify(request)
-            }
-        );
-
-        currentProfile = profile;
-
-        renderProfile(profile);
-
-        showMessage(
-            "Virksomhedsprofilen blev opdateret.",
-            false
-        );
-
-    } catch (error) {
-        console.error("Profilopdatering fejlede:", error);
-
-        showMessage(error.message, true);
-    }
-}
-
-async function updateAvailability(event) {
-    const toggle = event.target;
-
-    try {
-        const profile = await apiRequest(
-            "/availability",
-            {
-                method: "PATCH",
-
-                body: JSON.stringify({
-                    availableForWork: toggle.checked
-                })
-            }
-        );
-
-        currentProfile = profile;
-
-        renderProfile(profile);
-
-        showMessage(
-            profile.availableForWork
-                ? "Din virksomhed tager nu imod nye opgaver."
-                : "Din virksomhed er markeret som utilgængelig.",
-            false
-        );
-
-    } catch (error) {
-        console.error("Tilgængelighed kunne ikke ændres:", error);
-
-        /*
-         * Sæt toggle tilbage til den tidligere værdi,
-         * hvis backend-kaldet fejler.
-         */
-        toggle.checked =
-            currentProfile?.availableForWork ?? false;
-
-        showMessage(error.message, true);
-    }
-}
-
-function renderProfile(profile) {
-    document.getElementById("profile-status").textContent =
-        translateStatus(profile.status);
-
-    document.getElementById("profile-status").dataset.status =
-        profile.status;
-
-    document.getElementById("summary-company-name").textContent =
-        profile.companyName;
-
-    document.getElementById("summary-category").textContent =
-        profile.categoryName;
-
-    document.getElementById("summary-owner").textContent =
-        profile.ownerName;
-
-    document.getElementById("summary-location").textContent =
-        profile.location;
-
-    document.getElementById("summary-rating").textContent =
-        formatRating(profile.rating);
-
-    document.getElementById("summary-active").textContent =
-        profile.active ? "Ja" : "Nej";
-
-    document.getElementById("availability-toggle").checked =
-        profile.availableForWork;
-
-    document.getElementById("company-name").value =
-        profile.companyName ?? "";
-
-    document.getElementById("description").value =
-        profile.description ?? "";
-
-    document.getElementById("phone").value =
-        profile.phone ?? "";
-
-    document.getElementById("business-email").value =
-        profile.businessEmail ?? "";
-
-    document.getElementById("location").value =
-        profile.location ?? "";
-
-    document.getElementById("category").value =
-        profile.categoryName ?? "";
-
-    renderPreview(profile);
-}
-
-function renderPreview(profile) {
-    document.getElementById("preview-icon").textContent =
-        profile.categoryIcon || "🔧";
-
-    document.getElementById("preview-company").textContent =
-        profile.companyName;
-
-    document.getElementById("preview-category").textContent =
-        profile.categoryName;
-
-    document.getElementById("preview-description").textContent =
-        profile.description ||
-        "Virksomheden har endnu ikke skrevet en beskrivelse.";
-
-    document.getElementById("preview-location").textContent =
-        `📍 ${profile.location}`;
-
-    document.getElementById("preview-rating").textContent =
-        `⭐ ${formatRating(profile.rating)}`;
-
-    const availabilityElement =
-        document.getElementById("preview-availability");
-
-    availabilityElement.textContent =
+(() => {
+  'use strict';
+
+  const TOKEN_KEY='worklyToken', AUTH_KEY='worklyAuth';
+  const token=localStorage.getItem(TOKEN_KEY)||'';
+  let auth=null; try{auth=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch{auth=null}
+  let profile=null;
+  const $=s=>document.querySelector(s);
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  function init(){
+    if(!token || !auth?.role?.includes('ENTREPRENEUR')) return renderGate();
+    $('#portalUserEmail').textContent=auth.email||'';
+    $('#portalLogout').addEventListener('click', logout);
+    $('#availabilityToggle').addEventListener('change', updateAvailability);
+    $('#profileForm').addEventListener('submit', updateProfile);
+    loadProfile();
+  }
+
+  function renderGate(){
+    document.body.innerHTML=`<div class="portal-gate"><div class="portal-gate-card"><a href="/" class="brand" style="justify-content:center"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Workly</span></a><h1>Fagperson-adgang krævet</h1><p>Log ind med en godkendt fagpersonkonto for at se profilen.</p><a class="btn btn-primary" href="/" style="margin-top:14px">Til forsiden</a></div></div>`;
+  }
+
+  function logout(){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(AUTH_KEY);location.href='/'}
+
+  async function api(path,options={}){
+    const headers=new Headers(options.headers||{}); headers.set('Authorization',`Bearer ${token}`); if(options.body)headers.set('Content-Type','application/json');
+    const r=await fetch(path,{...options,headers}); const type=r.headers.get('content-type')||''; const body=type.includes('application/json')?await r.json():(await r.text()||null);
+    if(!r.ok){if(r.status===401||r.status===403)setTimeout(logout,650);throw new Error(typeof body==='object'&&body?.message?body.message:typeof body==='string'&&body?body:`Request failed (${r.status})`)} return body;
+  }
+
+  async function loadProfile(){
+    try{profile=await api('/api/entrepreneur/profile');renderProfile()}catch(e){toast(e.message,'error')}
+  }
+
+  function renderProfile(){
+    if(!profile)return;
+    $('#identityIcon').textContent=profile.categoryIcon||'◼';
+    $('#identityCompany').textContent=profile.companyName||'Din virksomhed';
+    $('#identityCategory').textContent=(profile.categoryName||'Fagperson').toUpperCase();
+    $('#identityOwner').textContent=`${profile.ownerName||''}${profile.loginEmail?` · ${profile.loginEmail}`:''}`;
+    $('#identityDescription').textContent=profile.description||'Tilføj en kort beskrivelse af de opgaver du hjælper kunder med.';
+    $('#identityLocation').textContent=profile.location||'—';
+    $('#identityBusinessEmail').textContent=profile.businessEmail||'—';
+    $('#identityPhone').textContent=profile.phone||'—';
+    $('#profileRating').textContent=`${Number(profile.rating||0).toFixed(1)} ★`;
+    $('#profileCategoryMetric').textContent=profile.categoryName||'—';
+    $('#profileId').textContent=`#${profile.id??'—'}`;
+
+    const status=$('#profileStatus'); status.textContent=profile.status||'—'; status.className=`status-pill ${profile.status||''}`;
+    const active=$('#profileActive'); active.textContent=profile.active?'ACTIVE':'INACTIVE'; active.className=`status-pill ${profile.active?'APPROVED':'ARCHIVED'}`;
+    $('#availabilityToggle').checked = !!profile.availableForWork;
+
+    $('#availabilityTitle').textContent =
         profile.availableForWork
-            ? "Tager imod nye opgaver"
-            : "Tager ikke imod nye opgaver";
+            ? 'Jeg tager imod nye opgaver'
+            : 'Tager ikke imod opgaver i øjeblikket';
 
-    availabilityElement.classList.toggle(
-        "unavailable",
-        !profile.availableForWork
-    );
+    $('#availabilityText').textContent =
+        profile.availableForWork
+            ? 'Din profil er synlig som tilgængelig for nye opgaver.'
+            : 'Din profil viser kunderne, at du ikke er tilgængelig lige nu.';
+    $('#portalCompanyName').value=profile.companyName||'';
+    $('#portalBusinessEmail').value=profile.businessEmail||'';
+    $('#portalPhone').value=profile.phone||'';
+    $('#portalLocation').value=profile.location||'';
+    $('#portalDescription').value=profile.description||'';
+    renderCompletion();
+  }
 
-    const phoneLink =
-        document.getElementById("preview-phone");
+  function renderCompletion(){
+    const values=[profile.companyName,profile.businessEmail,profile.phone,profile.location,profile.description,profile.categoryName];
+    const filled=values.filter(v=>String(v||'').trim()).length;
+    const pct=Math.round(filled/values.length*100);
+    $('#profileCompletion').style.width=`${pct}%`;
+    $('#profileCompletionText').textContent=`${pct}% af de centrale profilfelter er udfyldt.`;
+  }
 
-    phoneLink.href = `tel:${profile.phone}`;
+  async function updateAvailability(e){
+    const checked=e.target.checked; e.target.disabled=true;
+    try{profile=await api('/api/entrepreneur/availability',{method:'PATCH',body:JSON.stringify({availableForWork:checked})});renderProfile();toast(checked?'Du tager nu imod nye opgaver.':'Tilgængelighed sat på pause.','success')}
+    catch(error){e.target.checked=!checked;toast(error.message,'error')}
+    finally{e.target.disabled=false}
+  }
 
-    const emailLink =
-        document.getElementById("preview-email");
+  async function updateProfile(e){
+    e.preventDefault(); const submit=e.currentTarget.querySelector('button[type="submit"]'); busy(submit,true,'Gemmer…'); setMessage('','');
+    try{
+      profile=await api('/api/entrepreneur/profile',{method:'PUT',body:JSON.stringify({
+        companyName:$('#portalCompanyName').value.trim(), businessEmail:$('#portalBusinessEmail').value.trim(), phone:$('#portalPhone').value.trim(), location:$('#portalLocation').value.trim(), description:$('#portalDescription').value.trim()
+      })});
+      renderProfile(); setMessage('Profilen er opdateret.','success'); toast('Dine ændringer er gemt.','success');
+    }catch(error){setMessage(error.message,'error')}finally{busy(submit,false,'Gem ændringer')}
+  }
 
-    emailLink.href = `mailto:${profile.businessEmail}`;
-}
-
-function translateStatus(status) {
-    const translations = {
-        PENDING: "Afventer godkendelse",
-        APPROVED: "Godkendt",
-        REJECTED: "Afvist",
-        SUSPENDED: "Suspenderet"
-    };
-
-    return translations[status] || status;
-}
-
-function formatRating(rating) {
-    return Number(rating ?? 0)
-        .toFixed(1)
-        .replace(".", ",");
-}
-
-function showMessage(message, isError) {
-    const element =
-        document.getElementById("message-box");
-
-    element.textContent = message;
-
-    element.classList.remove(
-        "hidden",
-        "success",
-        "error"
-    );
-
-    element.classList.add(
-        isError ? "error" : "success"
-    );
-
-    window.clearTimeout(showMessage.timeout);
-
-    showMessage.timeout = window.setTimeout(() => {
-        element.classList.add("hidden");
-    }, 4000);
-}
-
-function logout() {
-    localStorage.removeItem("worklyToken");
-    localStorage.removeItem("worklyUser");
-
-    window.location.replace("/");
-}
+  function setMessage(message,type){const el=$('#profileMessage');el.textContent=message||'';el.className=`inline-message${message?` show ${type}`:''}`}
+  function busy(b,on,label){if(on){b.dataset.label=b.textContent;b.disabled=true;b.textContent=label}else{b.disabled=false;b.textContent=b.dataset.label||label}}
+  function toast(message,type=''){const stack=$('#toastStack');const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=message;stack.appendChild(el);setTimeout(()=>el.remove(),3600)}
+})();

@@ -1,7 +1,2 @@
 package dk.ek.workly.model;
-
-public enum NewsStatus {
-    DRAFT,
-    PUBLISHED,
-    ARCHIVED
-}
+public enum NewsStatus { DRAFT, PUBLISHED, ARCHIVED }
