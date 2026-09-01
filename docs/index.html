@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Workly forbinder dig med godkendte lokale fagpersoner.">
+  <title>Workly — Lokale fagpersoner, gjort enkelt</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script defer src="/js/app.js"></script>
+</head>
+<body>
+  <div class="noise"></div>
+  <canvas id="scene-canvas" aria-hidden="true"></canvas>
+
+  <div class="page">
+    <header class="topbar" id="topbar">
+      <div class="container nav">
+        <a href="#top" class="brand" aria-label="Workly forside">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span>Workly</span>
+        </a>
+
+        <nav class="nav-links" aria-label="Primær navigation">
+          <a href="#professionals">Find fagperson</a>
+          <a href="#how">Sådan virker det</a>
+          <a href="#news">Nyt fra Workly</a>
+          <a href="#for-pros">For fagpersoner</a>
+        </nav>
+
+        <div class="nav-actions">
+          <span class="user-chip" id="userChip"><span class="user-dot"></span><span id="userChipText"></span></span>
+          <button class="btn btn-ghost" id="loginButton" type="button">Log ind</button>
+          <button class="btn btn-primary" id="primaryNavButton" type="button">Find en fagperson</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow">Godkendte fagpersoner i dit område</span>
+            <h1 class="display">
+              Find nogen, der kan <em>løse det.</em>
+            </h1>
+            <p class="hero-sub">Workly samler lokale håndværkere og servicefag ét sted. Se kategori, område, rating og tilgængelighed før du tager kontakt — uden at gætte dig frem.</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#professionals">Se fagpersoner</a>
+              <button class="btn btn-ghost" id="heroJoinButton" type="button">Bliv fagperson</button>
+            </div>
+            <div class="hero-trust" aria-label="Workly fordele">
+              <span class="micro-pill"><b>APPROVED</b> profiler</span>
+              <span class="micro-pill"><b id="heroCategoryCount">—</b> fagkategorier</span>
+              <span class="micro-pill">Direkte kontakt</span>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-hidden="true">
+            <div class="orbit-card back-a">
+              <div class="card-top"><div class="pro-avatar">🪚</div><span class="status-badge">APPROVED</span></div>
+              <h3>Nordic Træ & Byg</h3><div class="orbit-meta">Tømrer · Roskilde</div>
+            </div>
+            <div class="orbit-card back-b">
+              <div class="card-top"><div class="pro-avatar">🎨</div><span class="status-badge">LEDIG</span></div>
+              <h3>Studio Maler</h3><div class="orbit-meta">Maler · Frederiksberg</div>
+            </div>
+            <div class="orbit-card main" id="heroTiltCard">
+              <div class="card-top"><div class="pro-avatar">⚡</div><span class="status-badge">LEDIG NU</span></div>
+              <h3>Holm Elservice</h3>
+              <div class="orbit-meta">Elektriker · København</div>
+              <div class="rating-row"><span class="rating">★★★★★</span><span class="orbit-meta">4.9 / 5</span></div>
+              <div class="card-line"></div>
+              <div class="card-details">
+                <div><small>Status</small><strong>Godkendt profil</strong></div>
+                <div><small>Område</small><strong>København</strong></div>
+                <div><small>Fag</small><strong>Elektriker</strong></div>
+                <div><small>Kontakt</small><strong>Direkte via Workly</strong></div>
+              </div>
+            </div>
+            <span class="float-cube a"></span><span class="float-cube b"></span>
+          </div>
+        </div>
+        <div class="container"><div class="scroll-cue"><i></i><span>Scroll for at udforske</span></div></div>
+      </section>
+
+      <div class="stats-ribbon">
+        <div class="container stats-grid">
+          <div class="stat"><strong id="statCategories">—</strong><small>fagkategorier</small></div>
+          <div class="stat"><strong id="statProfessionals"><span>—</span></strong><small>godkendte fagpersoner</small></div>
+          <div class="stat"><strong><span>LIVE</span></strong><small>tilgængelighed på profiler</small></div>
+          <div class="stat"><strong>0<span> kr.</span></strong><small>at browse Workly</small></div>
+        </div>
+      </div>
+
+      <section class="section" id="professionals">
+        <div class="container">
+          <span class="kicker">Find den rette</span>
+          <h2 class="section-title">Fagpersoner du kan forstå, før du kontakter dem.</h2>
+          <p class="section-copy">Filtrér efter fag eller søg på virksomhed, område og kategori. Workly viser kun de profiler backend markerer som godkendte.</p>
+
+          <div class="browse-shell">
+            <div class="search-row">
+              <label class="search-box" for="professionalSearch">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+                <input id="professionalSearch" type="search" placeholder="Søg fx elektriker, Brøndby eller virksomhedsnavn…" autocomplete="off">
+              </label>
+              <button class="btn btn-dark" id="clearFiltersButton" type="button">Nulstil</button>
+            </div>
+            <div class="filter-scroll" id="categoryFilters" aria-label="Kategorifilter">
+              <button class="filter-chip active" data-category-id="" type="button">Alle fag</button>
+            </div>
+          </div>
+
+          <div class="pro-grid" id="professionalsGrid" aria-live="polite">
+            <div class="pro-card skeleton"></div><div class="pro-card skeleton"></div><div class="pro-card skeleton"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-line" id="how">
+        <div class="container">
+          <span class="kicker">Sådan virker det</span>
+          <h2 class="section-title">Tre små skridt. Mindre støj, mere overblik.</h2>
+          <div class="steps">
+            <article class="step"><span class="step-num">01 / BROWSE</span><h3>Vælg et fag</h3><p>Gå direkte til den kategori du har brug for, eller søg på tværs af alle godkendte profiler.</p></article>
+            <article class="step"><span class="step-num">02 / COMPARE</span><h3>Sammenlign reelt</h3><p>Se virksomhed, område, beskrivelse, rating og om fagpersonen tager imod arbejde lige nu.</p></article>
+            <article class="step"><span class="step-num">03 / CONNECT</span><h3>Tag kontakt</h3><p>Brug kontaktoplysningerne på profilen, eller opret en konto hvis du selv vil søge om at blive listet.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="news">
+        <div class="container">
+          <span class="kicker">Nyt fra Workly</span>
+          <h2 class="section-title">Opdateringer uden corporate støj.</h2>
+          <div class="news-grid" id="newsGrid">
+            <article class="news-card skeleton"></article><article class="news-card skeleton"></article><article class="news-card skeleton"></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-line" id="for-pros">
+        <div class="container">
+          <span class="kicker">To sider af samme opgave</span>
+          <h2 class="section-title">Brug Workly som kunde — eller byg din synlighed som fagperson.</h2>
+          <div class="dual-cta" style="margin-top:46px">
+            <article class="cta-panel mint">
+              <span class="micro-pill"><b>FOR KUNDER</b></span>
+              <h3>Jeg skal have noget lavet</h3>
+              <p>Gå direkte til godkendte profiler og se, hvem der passer til opgaven og området.</p>
+              <a class="btn btn-primary" href="#professionals">Find fagperson</a>
+            </article>
+            <article class="cta-panel">
+              <span class="micro-pill">FOR FAGPERSONER</span>
+              <h3>Jeg vil findes på Workly</h3>
+              <p>Opret en bruger, send dine virksomhedsoplysninger og få din profil gennem Worklys godkendelsesflow.</p>
+              <button class="btn btn-ghost" id="bottomJoinButton" type="button">Ansøg som fagperson</button>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-row">
+        <a href="#top" class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>Workly</span></a>
+        <small>© 2026 Workly · Lokale fagpersoner, gjort lettere at finde.</small>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Authentication -->
+  <div class="modal-backdrop" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <div><h2 id="authTitle">Velkommen til Workly</h2><p>Log ind eller opret en konto.</p></div>
+        <button class="modal-close" type="button" data-close-modal="authModal" aria-label="Luk">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabbar"><button class="tab active" id="loginTab" type="button">Log ind</button><button class="tab" id="registerTab" type="button">Opret konto</button></div>
+        <div class="inline-message" id="authMessage"></div>
+        <form id="loginForm">
+          <div class="form-grid">
+            <div class="field full"><label for="loginEmail">Email</label><input id="loginEmail" name="email" type="email" required autocomplete="email" placeholder="dig@example.com"></div>
+            <div class="field full"><label for="loginPassword">Adgangskode</label><input id="loginPassword" name="password" type="password" required autocomplete="current-password" placeholder="••••••••"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit">Log ind</button></div>
+        </form>
+        <form id="registerForm" hidden>
+          <div class="form-grid">
+            <div class="field full"><label for="registerName">Navn</label><input id="registerName" name="name" type="text" required autocomplete="name" placeholder="Dit navn"></div>
+            <div class="field full"><label for="registerEmail">Email</label><input id="registerEmail" name="email" type="email" required autocomplete="email" placeholder="dig@example.com"></div>
+            <div class="field full"><label for="registerPassword">Adgangskode</label><input id="registerPassword" name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="Mindst 8 tegn"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit">Opret konto</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entrepreneur application -->
+  <div class="modal-backdrop" id="applyModal" role="dialog" aria-modal="true" aria-labelledby="applyTitle">
+    <div class="modal wide">
+      <div class="modal-head">
+        <div><h2 id="applyTitle">Bliv fagperson på Workly</h2><p>Din profil sendes ind i Worklys godkendelsesflow.</p></div>
+        <button class="modal-close" type="button" data-close-modal="applyModal" aria-label="Luk">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="inline-message" id="applyMessage"></div>
+        <form id="applyForm">
+          <div class="form-grid">
+            <div class="field"><label for="companyName">Virksomhedsnavn</label><input id="companyName" required maxlength="120"></div>
+            <div class="field"><label for="businessCategory">Kategori</label><select id="businessCategory" required><option value="">Vælg kategori</option></select></div>
+            <div class="field"><label for="businessEmail">Virksomheds-email</label><input id="businessEmail" type="email" required></div>
+            <div class="field"><label for="businessPhone">Telefon</label><input id="businessPhone" required maxlength="30"></div>
+            <div class="field full"><label for="businessLocation">Område</label><input id="businessLocation" required maxlength="120" placeholder="Fx København, Brøndby eller Roskilde"></div>
+            <div class="field full"><label for="businessDescription">Beskrivelse</label><textarea id="businessDescription" maxlength="2000" placeholder="Fortæl kort hvad du hjælper kunder med…"></textarea></div>
+          </div>
+          <p class="form-note">Du skal være logget ind som almindelig bruger for at sende en ansøgning.</p>
+          <div class="form-actions"><button class="btn btn-primary" type="submit">Send ansøgning</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+</body>
+</html>
